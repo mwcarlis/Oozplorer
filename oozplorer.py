@@ -29,7 +29,7 @@ class OzKB(KB):
         """
         pass
 
-class OzAgent(Thing):
+class Agent(Thing):
     """ The player that we want to win.  Or lose depending on how evil you
     are. Inherit a thing.
     """
@@ -53,11 +53,12 @@ class OzAgent(Thing):
         while playing:
             playing = False
 
-class OzEmpty(Thing):
+class Pit(Thing):
     """ The pit for this game. Inherit a thing.
     """
     def __init__(self):
         pass
+
 
 class OzPit(Thing):
     """ The pit for this game. Inherit a thing.
@@ -74,19 +75,19 @@ class OzGold(Thing):
     def __init__(self):
         pass
 
-class OzBoard(XYEnvironment):
+class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
     """
     def __init__(self, width=10, height=10):
         """
         """
-        super(OzBoard, self).__init__(width, height)
+        super(Board, self).__init__(width, height)
         self.add_walls()
 
     def thing_classes(self):
         """
         """
-        return [Wall, OzGold, OzPit, OzAgent]
+        return [Wall, Gold, Pit, Agent]
 
     def move(self, pair):
         """
