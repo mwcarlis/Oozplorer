@@ -53,7 +53,7 @@ class Agent(Thing):
         while playing:
             playing = False
 
-class Pit(Thing):
+class OzPit(Thing):
     """ The pit for this game. Inherit a thing.
     """
     def __init__(self):
