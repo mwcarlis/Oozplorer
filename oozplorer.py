@@ -59,14 +59,8 @@ class OzPit(Thing):
     """ The pit for this game. Inherit a thing.
     """
     def __init__(self):
-        self.location = None
-
-
-class OzPit(Thing):
-    """ The pit for this game. Inherit a thing.
-    """
-    def __init__(self):
         self.state = -1
+        self.location = None
         super(Thing,self).__init__()
     def show_state(self):
         print self.state 
