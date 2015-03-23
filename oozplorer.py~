@@ -59,7 +59,7 @@ class Pit(Thing):
     def __init__(self):
         pass
 
-<<<<<<< HEAD
+
 class OzPit(Thing):
     """ The pit for this game. Inherit a thing.
     """
@@ -70,9 +70,6 @@ class OzPit(Thing):
         print self.state 
 
 class OzGold(Thing):
-=======
-class Gold(Thing):
->>>>>>> 5a6526f5d97e5b6d5d95b5ff570b8f41005e3c84
     """ The goal for this game. Inherit a thing.
     """
     def __init__(self):

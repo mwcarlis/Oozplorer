@@ -65,7 +65,7 @@ class OzPit(Thing):
     """
     def __init__(self):
         self.state = -1
-        super(OzPil,self).__init__()
+        super(Thing,self).__init__()
     def show_state(self):
         print self.state 
 
