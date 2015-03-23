@@ -5,6 +5,7 @@
 - Shunt Balushian
 """
 import sys
+import random
 from agents import Thing, XYEnvironment, Wall
 from logic import KB, FolKB
 
@@ -38,6 +39,7 @@ class Agent(Thing):
         """
         self.alive = True
         self.some_number = some_number
+        self.location = None
         if program is None:
             def program(percept):
                 return raw_input('percept=%s; action?' % percept)
@@ -56,13 +58,13 @@ class Pit(Thing):
     """ The pit for this game. Inherit a thing.
     """
     def __init__(self):
-        pass
+        self.location = None
 
 class Gold(Thing):
     """ The goal for this game. Inherit a thing.
     """
     def __init__(self):
-        pass
+        self.location = None
 
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
@@ -71,12 +73,39 @@ class Board(XYEnvironment):
         """
         """
         super(Board, self).__init__(width, height)
+        #self.width, self.height = width, height
         self.add_walls()
 
     def thing_classes(self):
         """
         """
         return [Wall, Gold, Pit, Agent]
+
+    def default_location(self, thing):
+        """
+        """
+        if isinstance(thing, Agent):
+            return (1, 1)
+        else:
+            get_rand = lambda arg: random.choice(range(1, arg))
+            return (get_rand(self.width), get_rand(self.height))
+
+    def add_thing(self, thing, location=None):
+        """Add a thing to the environment, setting its location. For
+        convenience, if thing is an agent program we make a new agent
+        for it. (Shouldn't need to override this."""
+        #if not isinstance(thing, Thing):
+        #    thing = Agent(thing)
+        assert thing not in self.things, "Don't add the same thing twice"
+        thing.location = location or self.default_location(thing)
+        self.things.append(thing)
+        if isinstance(thing, Agent):
+            thing.performance = 0
+            self.agents.append(thing)
+        thing.holding = []
+        thing.held = None
+        for obs in self.observers:
+            obs.thing_added(thing)
 
     def move(self, pair):
         """
@@ -113,7 +142,7 @@ def parse_arguments(arguments):
     """
     def bail_out():
         print 'Invalid Command line arguments.  Use Integers only.'
-        sys.exit(1)
+        #sys.exit(1)
     try:
         number = int(arguments[1])
     except IndexError:
