@@ -52,19 +52,25 @@ class OzAgent(Thing):
         while playing:
             playing = False
 
-class OzPit(Thing):
+class oz_empty(Thing):
     """ The pit for this game. Inherit a thing.
     """
     def __init__(self):
         pass
 
-class OzGold(Thing):
+class oz_pit(Thing):
+    """ The pit for this game. Inherit a thing.
+    """
+    def __init__(self):
+        pass
+
+class oz_Gold(Thing):
     """ The goal for this game. Inherit a thing.
     """
     def __init__(self):
         pass
 
-class OzBoard(XYEnvironment):
+class oz_board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
     """
     def __init__(self, width=10, height=10):
