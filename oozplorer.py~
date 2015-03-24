@@ -74,6 +74,10 @@ class OzGold(Thing):
         super(Thing,self).__init__()
     def show_state(self):
         print self.state 
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment

@@ -55,7 +55,7 @@ class Agent(Thing):
         while playing:
             playing = False
 
-class OzPit(Thing):
+class Pit(Thing):
     """ The pit for this game. Inherit a thing.
     """
     def __init__(self):
@@ -65,7 +65,7 @@ class OzPit(Thing):
     def show_state(self):
         print self.state 
 
-class OzGold(Thing):
+class Gold(Thing):
     """ The goal for this game. Inherit a thing.
     """
     def __init__(self):
