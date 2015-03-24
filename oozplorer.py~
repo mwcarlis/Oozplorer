@@ -8,8 +8,8 @@
 import sys
 import random
 from agents import Thing, XYEnvironment, Wall
-from logic import KB, FolKB
-
+from logic import KB, FolKB,PropKB,expr,dpll_satisfiable
+from logic import *
 class OzKB(KB):
     """ I don't know if we need this or if we can inherit something more 
             evolved from the logic.py classes.
@@ -54,13 +54,6 @@ class Agent(Thing):
         playing = True
         while playing:
             playing = False
-
-class OzPit(Thing):
-    """ The pit for this game. Inherit a thing.
-    """
-    def __init__(self):
-        self.location = None
-
 
 class OzPit(Thing):
     """ The pit for this game. Inherit a thing.
@@ -163,9 +156,27 @@ def parse_arguments(arguments):
         bail_out()
     return number
 
+def create_logic(some_number):
+	print some_number
 
 if __name__ == '__main__':
     ARGS = sys.argv
     NUMBER = parse_arguments(ARGS)
     run_game(NUMBER)
-    print NUMBER
+    create_logic(NUMBER)
+    #print NUMBER
+
+
+kb = PropKB()
+e1 = expr("A11 & B21")
+e2 = expr("B21 ==> C11")
+kb.tell(e1)
+kb.tell(e2)
+C = expr("A11 & B21")
+P = expr("P")
+print kb.ask(C) #returns empty clause {} thus true
+print kb.ask(P) #returns false
+
+dpll_satisfiable(A & ~B & C & (A | ~D) & (~E | ~D) & (C | ~D) & (~A | ~F) & (E | ~F) & (~D | ~F) & (B | ~C | D) & (A | ~E | F) & (~A | E | D))
+
+
