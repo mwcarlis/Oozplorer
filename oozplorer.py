@@ -69,7 +69,11 @@ class OzGold(Thing):
     """ The goal for this game. Inherit a thing.
     """
     def __init__(self):
+        self.state = 1
         self.location = None
+        super(Thing,self).__init__()
+    def show_state(self):
+        print self.state 
 
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
