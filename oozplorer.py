@@ -168,13 +168,16 @@ if __name__ == '__main__':
 
 
 kb = PropKB()
-e1 = expr("A11 & B21")
+P = OzPit()
+Gold = expr(~G)
+Pit = expr(~P)
+Breeze = expr(~Breeze)
 e2 = expr("B21 ==> C11")
-kb.tell(e1)
-kb.tell(e2)
+kb.tell(Gold)
+kb.tell(Pit)
 C = expr("A11 & B21")
 P = expr("P")
-print kb.ask(C) #returns empty clause {} thus true
+print kb.ask(~A) #returns empty clause {} thus true
 print kb.ask(P) #returns false
 
 print dpll_satisfiable(A & ~B & C & (A | ~D) & (~E | ~D) & (C | ~D) & (~A | ~F) & (E | ~F) & (~D | ~F) & (B | ~C | D) & (A | ~E | F) & (~A | E | D))
