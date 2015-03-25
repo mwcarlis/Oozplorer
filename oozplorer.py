@@ -89,6 +89,10 @@ class Board(XYEnvironment):
         """
         """
         return [Wall, Gold, Pit, Agent]
+    #randome function we can use
+    def generate():
+        p = 0.2
+        return random.random() <= p
 
     def default_location(self, thing):
         """
@@ -159,6 +163,9 @@ def parse_arguments(arguments):
     except ValueError:
         bail_out()
     return number
+
+def generate():
+    return random.random() <= p
 
 def create_logic(some_number):
 	print some_number

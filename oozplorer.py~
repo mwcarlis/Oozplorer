@@ -55,7 +55,7 @@ class Agent(Thing):
         while playing:
             playing = False
 
-class OzPit(Thing):
+class Pit(Thing):
     """ The pit for this game. Inherit a thing.
     """
     def __init__(self):
@@ -65,7 +65,7 @@ class OzPit(Thing):
     def show_state(self):
         print self.state 
 
-class OzGold(Thing):
+class Gold(Thing):
     """ The goal for this game. Inherit a thing.
     """
     def __init__(self):
@@ -74,10 +74,6 @@ class OzGold(Thing):
         super(Thing,self).__init__()
     def show_state(self):
         print self.state 
-<<<<<<< HEAD
-=======
-
->>>>>>> master
 
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
@@ -93,6 +89,9 @@ class Board(XYEnvironment):
         """
         """
         return [Wall, Gold, Pit, Agent]
+    def generate():
+        p = 0.2
+        return random.random() <= p
 
     def default_location(self, thing):
         """
@@ -163,6 +162,9 @@ def parse_arguments(arguments):
     except ValueError:
         bail_out()
     return number
+
+def generate():
+    return random.random() <= p
 
 def create_logic(some_number):
 	print some_number
