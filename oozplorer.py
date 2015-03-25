@@ -51,7 +51,7 @@ class Agent(Thing):
                         # Out of boundaries.
                         if move[0] < 0 or move[1] < 0:
                             raise Exception('Continue')
-                        if move[0] > 9, or move[1] > 9:
+                        if move[0] > 9 or move[1] > 9:
                             raise Exception('Continue')
                     except Exception:
                         print 'Invalid input.  Try: 1, 3   etc'
@@ -251,13 +251,38 @@ def parse_arguments(arguments):
         bail_out()
     return number
 
+def generate():
+    p = 0.2
+    return random.random() <= p
+
+def make_board(some_number):
+    board = Board()
+    row = 1
+    for i in range(1,some_number+1):
+        col = 1
+        #print "Row is %d" %row
+        for j in range(1,some_number+1):
+            #print "Colum is %d" %col 
+            if generate():
+                #print "Enters here"
+                pt = Pit()
+                pt.location = (row,col)
+                board.things.append(pt)
+            col = col + 1
+        row+=1
+    return board
 
 if __name__ == '__main__':
+    b = make_board(4)
+    print len(b.things)
+    randompit = b.things[40]
+    print randompit.location
     print 'updating\n'
     ARGS = sys.argv
     #NUMBER = parse_arguments(ARGS)
     #run_game(NUMBER)
     #print NUMBER
+""" 
     pt = Pit()
     bd = Board()
     ag = Agent(3)
@@ -267,6 +292,7 @@ if __name__ == '__main__':
     print bd.agents
     bd.things.append(ag)
     bd.things.append(pt)
+    print len(bd.things)
     print bd.percept(ag)
     ag.location = (2, 1)
     print bd.percept(ag)
@@ -278,3 +304,4 @@ if __name__ == '__main__':
     print '   A . .   '
     print 'Move around the Pit and sense him or try to die.'
     bd.run()
+"""
