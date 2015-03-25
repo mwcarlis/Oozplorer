@@ -6,8 +6,24 @@
 """
 import sys
 import random
+from collections import defaultdict
 from agents import Thing, XYEnvironment, Wall
 from logic import KB, FolKB
+
+AGENT = 'A{}{}'
+GOLD = 'G{}{}'
+PIT = 'P{}{}'
+BREEZE = 'B{}{}'
+
+# A Pit iff all his neighbors have breezes
+PIT_IFF = 'P{}{} <=> (B{}{} & B{}{} & B{}{} & B{}{})'
+# No pit iff one or more neighbors has no breeze.
+N_PIT_IFF = '~P{}{} <=> (~B{}{} | ~B{}{} | ~B{}{} | ~B{}{})'
+
+# A breeze iff one or more neighbors has a pit
+BREEZE_IFF = 'B{}{} <=> (P{}{} | P {}{} | P{}{} | P{}{})'
+# No breeze iff none of the neighbors have pits.
+N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P {}{} & ~P{}{} & ~P{}{})'
 
 class OzKB(KB):
     """ I don't know if we need this or if we can inherit something more 
@@ -28,6 +44,19 @@ class OzKB(KB):
         """ Implement parent->KB.retract()
         """
         pass
+
+def KnowledgeBasedReflexAgent(rules, update_state, dimens):
+    """
+    """
+
+    knowledge = defaultdict(list)
+    for xloc in range(dimens):
+        for yloc in range(dimens):
+            knowledge[xloc][yloc] = []
+    def program(percept):
+        action = None
+        return action
+    return program
 
 class Agent(Thing):
     """ The player that we want to win.  Or lose depending on how evil you
@@ -106,6 +135,23 @@ class Board(XYEnvironment):
         """
         super(Board, self).__init__(width, height)
         self.add_walls()
+        self.remove_duplicate_walls()
+
+    def remove_duplicate_walls(self):
+        """ The stupid self.add_walls() function duplicates some walls.
+        Whoever wrote it must be super lazy.
+        """
+        wall_map = {}
+        duplicates = []
+        for cnt, thing in enumerate(self.things):
+            if isinstance(thing, Wall):
+                if not wall_map.has_key(thing.location):
+                    wall_map[thing.location] = True
+                else:
+                    duplicates.append(cnt)
+        for cnt, item in enumerate(duplicates):
+            self.things.pop(item - cnt)
+
 
     def thing_classes(self):
         """
@@ -133,6 +179,8 @@ class Board(XYEnvironment):
         return None
 
     def execute_action(self, agent, action):
+        """
+        """
         if self.is_done():
             return
         agent.bump = False
@@ -149,8 +197,16 @@ class Board(XYEnvironment):
     def default_location(self, thing):
         """
         """
+        get_rand = lambda arg: random.choice(range(1, arg))
         if isinstance(thing, Agent):
             return (1, 1)
+        elif isinstance(thing, Gold):
+            while True:
+                xloc, yloc = (get_rand(self.width), get_rand(self.height))
+                if (1, 1) == (xloc, yloc):
+                    continue
+                break
+            return (xloc, yloc)
         else:
             get_rand = lambda arg: random.choice(range(1, arg))
             return (get_rand(self.width), get_rand(self.height))
@@ -251,32 +307,35 @@ def parse_arguments(arguments):
         bail_out()
     return number
 
-def generate():
-    p = 0.2
-    return random.random() <= p
-
 def make_board(some_number):
-    board = Board()
+    generate = lambda: random.randint(1, 10) in [1, 2]
+
+    # some_number + 2 since the map is surrounded by walls.  2 extra cols/rows
+    board = Board(width=some_number + 2, height=some_number + 2)
+    agent = Agent(some_number)
+    gold = Gold()
+    board.add_thing(agent)
+    board.add_thing(gold)
     row = 1
-    for i in range(1,some_number+1):
+    for i in range(1, some_number + 1):
         col = 1
         #print "Row is %d" %row
-        for j in range(1,some_number+1):
+        for j in range(1, some_number + 1):
             #print "Colum is %d" %col 
             if generate():
                 #print "Enters here"
                 pt = Pit()
-                pt.location = (row,col)
+                pt.location = (row, col)
                 board.things.append(pt)
             col = col + 1
         row+=1
     return board
 
 if __name__ == '__main__':
-    b = make_board(4)
+    b = make_board(3)
     print len(b.things)
-    randompit = b.things[40]
-    print randompit.location
+    #randompit = b.things[40]
+    #print randompit.location
     print 'updating\n'
     ARGS = sys.argv
     #NUMBER = parse_arguments(ARGS)
