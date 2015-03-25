@@ -190,6 +190,41 @@ class Board(XYEnvironment):
         # super(OzBoard, self).move_to(thing, destination) # From super
         pass
 
+
+def satisfy(expr, true_var):
+    """ Recursively remove true_var from expr.
+
+    Args:
+        - expr (Expr): An expression which trying to simplify.
+        - true_var (Expr): A true variable to remove from the expression.
+
+    Returns:
+        - simplifed (Expr): The Expr now has no instances of true_var
+
+    EXAMPLE:
+    statement = expr('B01 <=> (P00 | P11 | P02) <=> (P00 | P11)')
+    satisfy(statement, expr('P00'))
+    statement becomes -> Expr('((B01 <=> (P11 | P02)) <=> P11)')
+    """
+    if len(expr.args) == 0:
+        if expr.__repr__() == true_var.__repr__():
+            return True
+        else:
+            return False
+    cnt = 0
+    while True:
+        if cnt >= len(expr.args):
+            break
+        arg = expr.args[cnt]
+        changed = satisfy(arg, true_var)
+        if isinstance(changed, Expr):
+            expr.args[cnt] = changed
+        elif changed is True:
+            expr.args.pop(cnt)
+            expr = expr.args[0]
+        cnt += 1
+    return expr
+
 def run_game(number):
     """
     Args:
