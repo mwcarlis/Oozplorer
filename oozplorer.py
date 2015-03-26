@@ -64,7 +64,7 @@ def iff_format(location, some_num, sentence, loop=False):
     loc_master = lambda statement: statement.format(xloc, yloc)
     if loop:
         rv = [sentence[0].format(_x[0], _x[1]) for _x in positions[:-1]]
-        rv += sentence[1].format(positions[-1][0], positions[-1][1])
+        rv.append(sentence[1].format(positions[-1][0], positions[-1][1]))
         return rv
     return [loc_master(sentence)]
 
