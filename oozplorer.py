@@ -63,7 +63,8 @@ def iff_format(location, some_num, sentence, loop=False):
     xloc, yloc = location
     loc_master = lambda statement: statement.format(xloc, yloc)
     if loop:
-        rv = [sentence.format(_x[0], _x[1]) for _x in positions[:-1]]
+        rv = [sentence[0].format(_x[0], _x[1]) for _x in positions[:-1]]
+        rv += sentence[1].format(positions[-1][0], positions[-1][1])
         return rv
     return [loc_master(sentence)]
 
@@ -76,32 +77,28 @@ def pit_iff(location, some_num):
     # A Pit iff all his neighbors have breezes
     #PIT_IFF = 'P{}{} <=> (B{}{} & B{}{} & B{}{} & B{}{})'
     rv = iff_format(location, some_num, 'P{}{} <=> (')
-    rv.extend(iff_format(location, some_num, 'B{}{} & ', loop=True))
-    rv.extend(iff_format(location, some_num, 'B{}{})'))
+    rv.extend(iff_format(location, some_num, ['B{}{} & ', 'B{}{})'], loop=True))
     return sentence_builder(rv)
 
 def not_pit_iff(location, some_num):
     # No pit iff one or more neighbors has no breeze.
     #N_PIT_IFF = '~P{}{} <=> (~B{}{} | ~B{}{} | ~B{}{} | ~B{}{})'
     rv = iff_format(location, some_num, '~P{}{} <=> (')
-    rv.extend(iff_format(location, some_num, '~B{}{} | ', loop=True))
-    rv.extend(iff_format(location, some_num, '~B{}{})'))
+    rv.extend(iff_format(location, some_num, ['~B{}{} | ', '~B{}{})'], loop=True))
     return sentence_builder(rv)
 
 def breeze_iff(location, some_num):
     # A breeze iff one or more neighbors has a pit
     #BREEZE_IFF = 'B{}{} <=> (P{}{} | P{}{} | P{}{} | P{}{})'
     rv = iff_format(location, some_num, 'B{}{} <=> (')
-    rv.extend(iff_format(location, some_num, 'P{}{} | ', loop=True))
-    rv.extend(iff_format(location, some_num, 'P{}{})'))
+    rv.extend(iff_format(location, some_num, ['P{}{} | ', 'P{}{})'], loop=True))
     return sentence_builder(rv)
 
 def not_breeze_iff(location, some_num):
     # No breeze iff none of the neighbors have pits.
     #N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P{}{} & ~P{}{} & ~P{}{})'
     rv = iff_format(location, some_num, '~B{}{} <=> (')
-    rv.extend(iff_format(location, some_num, '~P{}{} & ', loop=True))
-    rv.extend(iff_format(location, some_num, '~P{}{})'))
+    rv.extend(iff_format(location, some_num, ['~P{}{} & ', '~P{}{})'], loop=True))
     return sentence_builder(rv)
 
 def which_position(location, some_number, logic_gen):
