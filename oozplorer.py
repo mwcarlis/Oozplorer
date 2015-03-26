@@ -51,6 +51,22 @@ def _valid_neighbors(location, some_num):
         ret_v.append((xpos, ypos))
     return ret_v
 
+def iff_format(location, some_num, sentence, loop=False):
+    """
+    Args:
+        location (tuple): of (x, y) cordinates.
+        some_num (int): The game some_num.
+        sentence (str): The string to apply formatting
+    """
+    positions = _valid_neighbors(location, some_num)
+    repeat = len(positions) - 1
+    xloc, yloc = location
+    loc_master = lambda statement: statement.format(xloc, yloc)
+    if loop:
+        rv = [sentence.format(_x[0], _x[1]) for _x in positions[:-1]]
+        return rv
+    return [loc_master(sentence)]
+
 def pit_iff(location, some_num):
     """
     Args:
@@ -59,50 +75,34 @@ def pit_iff(location, some_num):
     """
     # A Pit iff all his neighbors have breezes
     #PIT_IFF = 'P{}{} <=> (B{}{} & B{}{} & B{}{} & B{}{})'
-    positions = _valid_neighbors(location, some_num)
-    repeat = len(positions) - 1
-    xloc, yloc = location
-    loc_master = lambda statement: statement.format(xloc, yloc)
-    rv = [loc_master('P{}{} <=> (')]
-    rv1 = ['B{}{} & '.format(_x[0], _x[1]) for _x in positions[:-1]]
-    rv2 = ['B{}{})'.format(positions[-1][0], positions[-1][1])]
-    return sentence_builder([rv, rv1, rv2])
+    rv = iff_format(location, some_num, 'P{}{} <=> (')
+    rv.extend(iff_format(location, some_num, 'B{}{} & ', loop=True))
+    rv.extend(iff_format(location, some_num, 'B{}{})'))
+    return sentence_builder(rv)
 
 def not_pit_iff(location, some_num):
     # No pit iff one or more neighbors has no breeze.
     #N_PIT_IFF = '~P{}{} <=> (~B{}{} | ~B{}{} | ~B{}{} | ~B{}{})'
-    positions = _valid_neighbors(location, some_num)
-    repeat = len(positions) - 1
-    xloc, yloc = location
-    loc_master = lambda statement: statement.format(xloc, yloc)
-    rv = [loc_master('~P{}{} <=> (')]
-    rv1 = ['~B{}{} | '.format(_x[0], _x[1]) for _x in positions[:-1]]
-    rv2 = ['~B{}{})'.format(positions[-1][0], positions[-1][1])]
-    return sentence_builder([rv, rv1, rv2])
+    rv = iff_format(location, some_num, '~P{}{} <=> (')
+    rv.extend(iff_format(location, some_num, '~B{}{} | ', loop=True))
+    rv.extend(iff_format(location, some_num, '~B{}{})'))
+    return sentence_builder(rv)
 
 def breeze_iff(location, some_num):
     # A breeze iff one or more neighbors has a pit
     #BREEZE_IFF = 'B{}{} <=> (P{}{} | P{}{} | P{}{} | P{}{})'
-    positions = _valid_neighbors(location, some_num)
-    repeat = len(positions) - 1
-    xloc, yloc = location
-    loc_master = lambda statement: statement.format(xloc, yloc)
-    rv = [loc_master('B{}{} <=> (')]
-    rv1 = ['P{}{} | '.format(_x[0], _x[1]) for _x in positions[:-1]]
-    rv2 = ['P{}{})'.format(positions[-1][0], positions[-1][1])]
-    return sentence_builder([rv, rv1, rv2])
+    rv = iff_format(location, some_num, 'B{}{} <=> (')
+    rv.extend(iff_format(location, some_num, 'P{}{} | ', loop=True))
+    rv.extend(iff_format(location, some_num, 'P{}{})'))
+    return sentence_builder(rv)
 
 def not_breeze_iff(location, some_num):
     # No breeze iff none of the neighbors have pits.
     #N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P{}{} & ~P{}{} & ~P{}{})'
-    positions = _valid_neighbors(location, some_num)
-    repeat = len(positions) - 1
-    xloc, yloc = location
-    loc_master = lambda statement: statement.format(xloc, yloc)
-    rv = [loc_master('~B{}{} <=> (')]
-    rv1 = ['~P{}{} & '.format(_x[0], _x[1]) for _x in positions[:-1]]
-    rv2 = ['~P{}{})'.format(positions[-1][0], positions[-1][1])]
-    return sentence_builder([rv, rv1, rv2])
+    rv = iff_format(location, some_num, '~B{}{} <=> (')
+    rv.extend(iff_format(location, some_num, '~P{}{} & ', loop=True))
+    rv.extend(iff_format(location, some_num, '~P{}{})'))
+    return sentence_builder(rv)
 
 def which_position(location, some_number, logic_gen):
     """ Determine if location is a corner, edge or has 4 neighbors.
@@ -174,7 +174,7 @@ class Agent(Thing):
                 if not self.alive or self.winner:
                     return self.location
                 while True:
-                    ret_v = raw_input('percept=%s; action: x, y?' % percept)
+                    ret_v = raw_input('percept=%s; action: x, y? ' % percept)
                     try:
                         move = tuple([int(val.strip(' ')) for val in ret_v.split(',')])
                         # Out of boundaries.
@@ -232,14 +232,18 @@ class Breeze(Thing):
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
     """
-    def __init__(self, width=10, height=10):
+    def __init__(self, some_number):
         """
         """
-        super(Board, self).__init__(width, height)
+        # some_number + 2 since the map is surrounded by walls.  2 extra cols/rows
+        super(Board, self).__init__(some_number+2, some_number+2)
+        self.some_number = some_number
         self.add_walls()
         self.remove_duplicate_walls()
-        #def get_static_board_layout(things, width, height):
         self.matrix = None
+        self.frontier = None
+        self.make_board()
+        self.print_board()
 
     def print_board(self):
         if self.matrix is None:
@@ -348,6 +352,26 @@ class Board(XYEnvironment):
                 break
             return (xloc, yloc)
 
+    def make_board(self):
+        generate = lambda: random.randint(1, 10) in [1, 2]
+        some_number = self.some_number
+        agent = Agent(some_number)
+        gold = Gold()
+        self.add_thing(agent, None)
+        self.agents.append(agent)
+        self.add_thing(gold, None)
+        row = 1
+        for i in range(1, some_number + 1):
+            col = 1
+            for j in range(1, some_number + 1):
+                if generate() and (row, col) != gold.location:
+                    if (row, col) != gold.location and (row, col) != (1, 1):
+                        pt = Pit()
+                        pt.location = (row, col)
+                        self.things.append(pt)
+                col = col + 1
+            row+=1
+
     def move(self, pair):
         """
         Args:
@@ -427,31 +451,6 @@ def parse_arguments(arguments):
         bail_out()
     return number
 
-def make_board(some_number):
-    generate = lambda: random.randint(1, 10) in [1, 2]
-
-    # some_number + 2 since the map is surrounded by walls.  2 extra cols/rows
-    board = Board(width=some_number + 2, height=some_number + 2)
-    agent = Agent(some_number)
-    gold = Gold()
-    board.add_thing(agent, None)
-    board.agents.append(agent)
-    board.add_thing(gold, None)
-    row = 1
-    for i in range(1, some_number + 1):
-        col = 1
-        #print "Row is %d" %row
-        for j in range(1, some_number + 1):
-            #print "Colum is %d" %col 
-            if generate() and (row, col) != gold.location:
-                #print "Enters here"
-                if (row, col) != gold.location and (row, col) != (1, 1):
-                    pt = Pit()
-                    pt.location = (row, col)
-                    board.things.append(pt)
-            col = col + 1
-        row+=1
-    return board
 
 def get_static_board_layout(things, width, height):
     obj_map = convert_to_dict(things)
@@ -483,14 +482,9 @@ def convert_to_dict(things):
 
 if __name__ == '__main__':
     print 'updating\n'
-    b = make_board(3)
-    b.print_board()
-    #randompit = b.things[40]
-    #print randompit.location
     ARGS = sys.argv
-    #NUMBER = parse_arguments(ARGS)
+    b = Board(3)
     b.run()
-    #print NUMBER
 """ 
     pt = Pit()
     bd = Board()
