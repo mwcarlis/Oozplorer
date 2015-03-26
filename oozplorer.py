@@ -150,6 +150,34 @@ def KnowledgeBasedReflexAgent(rules, update_state, dimens):
         return action
     return program
 
+def get_stdin_agent(reference):
+    """ A standard input based agent.
+    Args:
+        reference (Board): This is the reference to the board object
+            for which you will be using the stdin_agent().  Often this
+            would be the 'self' pointer inside of a class.
+    """
+    self = reference
+    def stdin_agent(percept):
+        if not self.alive or self.winner:
+            return self.location
+        while True:
+            ret_v = raw_input('percept=%s; action: x, y? ' % percept)
+            try:
+                move = tuple([int(val.strip(' ')) for val in ret_v.split(',')])
+                # Out of boundaries.
+                if move[0] <= 0 or move[1] <= 0:
+                    raise Exception('Continue')
+                if move[0] > self.some_number or move[1] > self.some_number:
+                    raise Exception('Continue')
+            except Exception:
+                print 'Invalid input.  Try: 1, 3   etc'
+                continue
+            break
+        return move
+    return stdin_agent
+
+
 class Agent(Thing):
     """ The player that we want to win.  Or lose depending on how evil you
     are. Inherit a thing.
@@ -159,27 +187,13 @@ class Agent(Thing):
         """
         self.alive = True
         self.winner = False
+        if program is None:
+            program = get_stdin_agent(self)
+        assert callable(program)
+        self.program = program
+
         self.some_number = some_number
         self.location = None
-        if program is None:
-            def program(percept):
-                program.dimens = some_number
-                if not self.alive or self.winner:
-                    return self.location
-                while True:
-                    ret_v = raw_input('percept=%s; action: x, y? ' % percept)
-                    try:
-                        move = tuple([int(val.strip(' ')) for val in ret_v.split(',')])
-                        # Out of boundaries.
-                        if move[0] <= 0 or move[1] <= 0:
-                            raise Exception('Continue')
-                        if move[0] > some_number or move[1] > some_number:
-                            raise Exception('Continue')
-                    except Exception:
-                        print 'Invalid input.  Try: 1, 3   etc'
-                        continue
-                    break
-                return move
         assert callable(program)
         self.program = program
 
