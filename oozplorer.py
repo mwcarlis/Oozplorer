@@ -51,7 +51,7 @@ def _valid_neighbors(location, some_num):
         ret_v.append((xpos, ypos))
     return ret_v
 
-def iff_format(location, some_num, sentence, loop=False):
+def _iff_format(location, some_num, sentence, loop=False):
     """
     Args:
         location (tuple): of (x, y) cordinates.
@@ -69,36 +69,32 @@ def iff_format(location, some_num, sentence, loop=False):
     return [loc_master(sentence)]
 
 def pit_iff(location, some_num):
-    """
-    Args:
+    """Args:
         location (tuple): of (x, y) cordinates.
         some_num (int): The game some_num.
     """
     # A Pit iff all his neighbors have breezes
     #PIT_IFF = 'P{}{} <=> (B{}{} & B{}{} & B{}{} & B{}{})'
-    rv = iff_format(location, some_num, 'P{}{} <=> (')
-    rv.extend(iff_format(location, some_num, ['B{}{} & ', 'B{}{})'], loop=True))
+    rv = _iff_format(location, some_num, 'P{}{} <=> (')
+    rv.extend(_iff_format(location, some_num, ['B{}{} & ', 'B{}{})'], loop=True))
     return sentence_builder(rv)
-
 def not_pit_iff(location, some_num):
     # No pit iff one or more neighbors has no breeze.
     #N_PIT_IFF = '~P{}{} <=> (~B{}{} | ~B{}{} | ~B{}{} | ~B{}{})'
-    rv = iff_format(location, some_num, '~P{}{} <=> (')
-    rv.extend(iff_format(location, some_num, ['~B{}{} | ', '~B{}{})'], loop=True))
+    rv = _iff_format(location, some_num, '~P{}{} <=> (')
+    rv.extend(_iff_format(location, some_num, ['~B{}{} | ', '~B{}{})'], loop=True))
     return sentence_builder(rv)
-
 def breeze_iff(location, some_num):
     # A breeze iff one or more neighbors has a pit
     #BREEZE_IFF = 'B{}{} <=> (P{}{} | P{}{} | P{}{} | P{}{})'
-    rv = iff_format(location, some_num, 'B{}{} <=> (')
-    rv.extend(iff_format(location, some_num, ['P{}{} | ', 'P{}{})'], loop=True))
+    rv = _iff_format(location, some_num, 'B{}{} <=> (')
+    rv.extend(_iff_format(location, some_num, ['P{}{} | ', 'P{}{})'], loop=True))
     return sentence_builder(rv)
-
 def not_breeze_iff(location, some_num):
     # No breeze iff none of the neighbors have pits.
     #N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P{}{} & ~P{}{} & ~P{}{})'
-    rv = iff_format(location, some_num, '~B{}{} <=> (')
-    rv.extend(iff_format(location, some_num, ['~P{}{} & ', '~P{}{})'], loop=True))
+    rv = _iff_format(location, some_num, '~B{}{} <=> (')
+    rv.extend(_iff_format(location, some_num, ['~P{}{} & ', '~P{}{})'], loop=True))
     return sentence_builder(rv)
 
 def which_position(location, some_number, logic_gen):
@@ -350,6 +346,8 @@ class Board(XYEnvironment):
             return (xloc, yloc)
 
     def make_board(self):
+        """ Initialize the board according to assignment specs
+        """
         generate = lambda: random.randint(1, 10) in [1, 2]
         some_number = self.some_number
         agent = Agent(some_number)
@@ -357,17 +355,13 @@ class Board(XYEnvironment):
         self.add_thing(agent, None)
         self.agents.append(agent)
         self.add_thing(gold, None)
-        row = 1
-        for i in range(1, some_number + 1):
-            col = 1
-            for j in range(1, some_number + 1):
+        for row in range(1, some_number + 1):
+            for col in range(1, some_number + 1):
                 if generate() and (row, col) != gold.location:
                     if (row, col) != gold.location and (row, col) != (1, 1):
                         pt = Pit()
                         pt.location = (row, col)
                         self.things.append(pt)
-                col = col + 1
-            row+=1
 
     def move(self, pair):
         """
