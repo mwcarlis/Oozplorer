@@ -50,7 +50,10 @@ def which_position(location, some_number, logic_gen):
         # logic_gen(location, some_number)
         pass
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> f86b349952e92c3be8875dd89d44ca401a94cc0b
 class OzKB(KB):
     """ I don't know if we need this or if we can inherit something more 
             evolved from the logic.py classes.
@@ -345,6 +348,7 @@ def parse_arguments(arguments):
         bail_out()
     return number
 
+<<<<<<< HEAD
 
 def generate():
     return random.random() <= p
@@ -352,6 +356,8 @@ def generate():
 def create_logic(some_number):
 	print some_number
 
+=======
+>>>>>>> f86b349952e92c3be8875dd89d44ca401a94cc0b
 def make_board(some_number):
     generate = lambda: random.randint(1, 10) in [1, 2]
 
@@ -396,8 +402,11 @@ if __name__ == '__main__':
     print len(b.things)
     for t in b.things:
         print t, t.location
+<<<<<<< HEAD
     out = print_method(b)
     print out 
+=======
+>>>>>>> f86b349952e92c3be8875dd89d44ca401a94cc0b
     #randompit = b.things[40]
     #print randompit.location
     ARGS = sys.argv
@@ -411,7 +420,11 @@ if __name__ == '__main__':
 
 
     #NUMBER = parse_arguments(ARGS)
+<<<<<<< HEAD
 
+=======
+    b.run()
+>>>>>>> f86b349952e92c3be8875dd89d44ca401a94cc0b
     #print NUMBER
 """ 
     pt = Pit()
