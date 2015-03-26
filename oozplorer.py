@@ -88,12 +88,13 @@ class Agent(Thing):
         """
         """
         self.alive = True
+        self.winner = False
         self.some_number = some_number
         self.location = None
         if program is None:
             def program(percept):
                 program.dimens = some_number
-                if not self.alive:
+                if not self.alive or self.winner:
                     return self.location
                 while True:
                     ret_v = raw_input('percept=%s; action: x, y?' % percept)
@@ -114,6 +115,8 @@ class Agent(Thing):
 
     def is_alive(self):
         return self.alive
+    def is_winner(self):
+        return self.winner
 
     def start(self):
         """ Start the game and loop over the moves etc breaking when
@@ -188,6 +191,8 @@ class Board(XYEnvironment):
         # The agent falls into the darkness.
         if any(self.list_things_at((xloc, yloc), tclass=Pit)):
             agent.alive = False
+        if any(self.list_things_at((xloc, yloc), tclass=Gold)):
+            agent.winner = True
         diag_vectors = [(1, 1), (-1, 1), (-1, -1), (1, -1)] # unit-vectors
         # Get the relative diagonal locations using unit-vectors.
         diagonals = [(x + xloc, y + yloc) for x, y in diag_vectors]
@@ -199,6 +204,27 @@ class Board(XYEnvironment):
             if isinstance(item, Pit):
                 return Breeze(location=(xloc, yloc))
         return None
+
+    def is_done(self):
+        """ We're done if the Agent is dead or if he's a winner.  Dead is
+        higher priority than Winner.
+        """
+        dead = not any(agent.is_alive() for agent in self.agents)
+        winner = any(agent.is_winner() for agent in self.agents)
+        def winner_msg(msg):
+            try: # This is a hack to avoid printing the winning message twice.
+                if not self.printed_message:
+                    pass # We already printed.
+            except AttributeError: # Throw exception the first time.
+                self.printed_message = True
+                print msg
+        if dead:
+            winner_msg('Your Agent Died')
+            return dead
+        elif winner:
+            winner_msg('Your Agent Wins')
+            return winner
+        return False
 
     def execute_action(self, agent, action):
         """
@@ -228,8 +254,6 @@ class Board(XYEnvironment):
                 if (1, 1) == (xloc, yloc):
                     continue
                 break
-            if isinstance(thing, Gold):
-                print 'gold', xloc, yloc
             return (xloc, yloc)
 
     def move(self, pair):
@@ -321,7 +345,6 @@ def make_board(some_number):
     board.add_thing(agent, None)
     board.agents.append(agent)
     board.add_thing(gold, None)
-    print gold.location
     row = 1
     for i in range(1, some_number + 1):
         col = 1
@@ -339,13 +362,13 @@ def make_board(some_number):
     return board
 
 if __name__ == '__main__':
+    print 'updating\n'
     b = make_board(3)
     print len(b.things)
     for t in b.things:
         print t, t.location
     #randompit = b.things[40]
     #print randompit.location
-    print 'updating\n'
     ARGS = sys.argv
     #NUMBER = parse_arguments(ARGS)
     b.run()
