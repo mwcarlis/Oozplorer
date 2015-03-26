@@ -361,6 +361,18 @@ def make_board(some_number):
         row+=1
     return board
 
+def convert_to_dict(board):
+    d = {}
+    for n in board.things:
+        if isinstance(n,Pit):
+            x,y = n.location
+            d[x,y] = n
+        if isinstance(n,Gold):
+            x,y = n.location
+            d[x,y] = n
+    return d
+
+
 if __name__ == '__main__':
     print 'updating\n'
     b = make_board(3)
