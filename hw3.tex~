@@ -26,17 +26,29 @@ A graph of the CSP
 \\
 Variables:      Domains\\
 D1: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
-D2: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
-D3: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
-D4: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
-D5: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
-D6: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
-D7: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
-D8: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
-D9: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
-D10: District 1 \left\{ {blue, chartreuse, green,red}\right\} \\
+D2: District 2 \left\{ {blue, chartreuse, green,red}\right\} \\
+D3: District 3 \left\{ {blue, chartreuse, green,red}\right\} \\
+D4: District 4 \left\{ {blue, chartreuse, green,red}\right\} \\
+D5: District 5 \left\{ {blue, chartreuse, green,red}\right\} \\
+D6: District 6 \left\{ {blue, chartreuse, green,red}\right\} \\
+D7: District 7 \left\{ {blue, chartreuse, green,red}\right\} \\
+D8: District 8 \left\{ {blue, chartreuse, green,red}\right\} \\
+D9: District 9 \left\{ {blue, chartreuse, green,red}\right\} \\
+D10: District 10 \left\{ {blue, chartreuse, green,red}\right\} \\
 
+\begin{constraints}
+Constraints\\
+D1\ne D6, D2\ne D7, D2\ne D8, D2\ne D10, D3\ne D6, D3\ne D7, D3\ne D4, \\ D3\ne D5
+D4\ne D5, D5\ne D8, D5\ne D7, D6\ne D7, D6\ne D9, D6\ne D10, \\ D7\ne D9, D7\ne D8
+D7\ne D10, D9\ne D10 \\
+\end{constraints}
+\vspace{3mm}
 
+Problem 2
+\begin{Problem}
 
-
+D7 would be chosen since it has 6 constraints which is the most in the constraint problem
+D7\ne D2, D7\ne D3, D7\ne D5, D7\ne D6, D7\ne D8, D7\ne D9
+\end{Problem}
+\vspace{3mm}
 \end{document}

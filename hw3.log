@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.2.23)  24 MAR 2015 17:24
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.2.23)  25 MAR 2015 21:54
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -392,14 +392,79 @@ Underfull \hbox (badness 10000) in paragraph at lines 25--38
 
  []
 
+
+! LaTeX Error: Environment constraints undefined.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.39 \begin{constraints}
+                        
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+l.41 D1\ne
+           D6, D2\ne D7, D2\ne D8, D2\ne D10, D3\ne D6, D3\ne D7, D3\ne D4, ...
+
+? 
+
+! LaTeX Error: \begin{document} ended by \end{constraints}.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.44 \end{constraints}
+                      
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+l.44 \end{constraints}
+                      
+? 
+
+! LaTeX Error: Environment Problem undefined.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.48 \begin{Problem}
+                    
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+l.51 D7\ne
+           D2, D7\ne D3, D7\ne D5, D7\ne D6, D7\ne D8, D7\ne D9
+? 
+
+! LaTeX Error: \begin{document} ended by \end{Problem}.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.52 \end{Problem}
+                  
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+l.52 \end{Problem}
+                  
+? 
 [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] (./hw3.aux) ) 
 Here is how much of TeX's memory you used:
- 9818 strings out of 495028
- 186750 string characters out of 6181497
- 225041 words of memory out of 5000000
- 12855 multiletter control sequences out of 15000+600000
+ 9822 strings out of 495028
+ 186792 string characters out of 6181497
+ 226041 words of memory out of 5000000
+ 12859 multiletter control sequences out of 15000+600000
  3640 words of font info for 14 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  56i,6n,61p,393b,518s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -407,7 +472,7 @@ Here is how much of TeX's memory you used:
 exlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive
 /texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-
 dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on hw3.pdf (1 page, 36312 bytes).
+Output written on hw3.pdf (1 page, 37662 bytes).
 PDF statistics:
  23 PDF objects out of 1000 (max. 8388607)
  16 compressed objects within 1 object stream

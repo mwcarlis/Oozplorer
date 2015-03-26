@@ -9,9 +9,13 @@ import sys
 import random
 from collections import defaultdict
 from agents import Thing, XYEnvironment, Wall
+<<<<<<< HEAD
 from logic import KB, FolKB,PropKB,expr,dpll_satisfiable
 from logic import *
 
+=======
+from utils import print_table
+>>>>>>> e5c942476083d974bad090bcf51f334c4ed61899
 from logic import KB, FolKB
 
 AGENT = 'A{}{}'
@@ -19,15 +23,93 @@ GOLD = 'G{}{}'
 PIT = 'P{}{}'
 BREEZE = 'B{}{}'
 
-# A Pit iff all his neighbors have breezes
-PIT_IFF = 'P{}{} <=> (B{}{} & B{}{} & B{}{} & B{}{})'
-# No pit iff one or more neighbors has no breeze.
-N_PIT_IFF = '~P{}{} <=> (~B{}{} | ~B{}{} | ~B{}{} | ~B{}{})'
+def is_iterable(thing):
+    try: iter(thing)
+    except TypeError: return False
+    else: return True
 
-# A breeze iff one or more neighbors has a pit
-BREEZE_IFF = 'B{}{} <=> (P{}{} | P {}{} | P{}{} | P{}{})'
-# No breeze iff none of the neighbors have pits.
-N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P {}{} & ~P{}{} & ~P{}{})'
+def sentence_builder(some_val):
+    """ A simple decorator to create boolean expressions.
+    """
+    rv_s = ''
+    if isinstance(some_val, str): return some_val
+    for item in some_val:
+        if is_iterable(item):
+            rv_s += sentence_builder(item)
+    return rv_s
+
+def _valid_neighbors(location, some_num):
+    """ Return a list of the valid neighboring coordinates.
+
+    Args:
+        location (tuple): of (x, y) cordinates.
+        some_num (int): The game some_num.
+    """
+    xloc, yloc = location
+    vector = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+    ret_v = []
+    for vect in vector:
+        xpos = xloc + vect[0]
+        ypos = yloc + vect[1]
+        if xpos <= 0 or ypos <= 0:
+            continue
+        if xpos > some_num or ypos > some_num:
+            continue
+        ret_v.append((xpos, ypos))
+    return ret_v
+
+def pit_iff(location, some_num):
+    """
+    Args:
+        location (tuple): of (x, y) cordinates.
+        some_num (int): The game some_num.
+    """
+    # A Pit iff all his neighbors have breezes
+    #PIT_IFF = 'P{}{} <=> (B{}{} & B{}{} & B{}{} & B{}{})'
+    positions = _valid_neighbors(location, some_num)
+    repeat = len(positions) - 1
+    xloc, yloc = location
+    loc_master = lambda statement: statement.format(xloc, yloc)
+    rv = [loc_master('P{}{} <=> (')]
+    rv1 = ['B{}{} & '.format(_x[0], _x[1]) for _x in positions[:-1]]
+    rv2 = ['B{}{})'.format(positions[-1][0], positions[-1][1])]
+    return sentence_builder([rv, rv1, rv2])
+
+def not_pit_iff(location, some_num):
+    # No pit iff one or more neighbors has no breeze.
+    #N_PIT_IFF = '~P{}{} <=> (~B{}{} | ~B{}{} | ~B{}{} | ~B{}{})'
+    positions = _valid_neighbors(location, some_num)
+    repeat = len(positions) - 1
+    xloc, yloc = location
+    loc_master = lambda statement: statement.format(xloc, yloc)
+    rv = [loc_master('~P{}{} <=> (')]
+    rv1 = ['~B{}{} | '.format(_x[0], _x[1]) for _x in positions[:-1]]
+    rv2 = ['~B{}{})'.format(positions[-1][0], positions[-1][1])]
+    return sentence_builder([rv, rv1, rv2])
+
+def breeze_iff(location, some_num):
+    # A breeze iff one or more neighbors has a pit
+    #BREEZE_IFF = 'B{}{} <=> (P{}{} | P{}{} | P{}{} | P{}{})'
+    positions = _valid_neighbors(location, some_num)
+    repeat = len(positions) - 1
+    xloc, yloc = location
+    loc_master = lambda statement: statement.format(xloc, yloc)
+    rv = [loc_master('B{}{} <=> (')]
+    rv1 = ['P{}{} | '.format(_x[0], _x[1]) for _x in positions[:-1]]
+    rv2 = ['P{}{})'.format(positions[-1][0], positions[-1][1])]
+    return sentence_builder([rv, rv1, rv2])
+
+def not_breeze_iff(location, some_num):
+    # No breeze iff none of the neighbors have pits.
+    #N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P{}{} & ~P{}{} & ~P{}{})'
+    positions = _valid_neighbors(location, some_num)
+    repeat = len(positions) - 1
+    xloc, yloc = location
+    loc_master = lambda statement: statement.format(xloc, yloc)
+    rv = [loc_master('~B{}{} <=> (')]
+    rv1 = ['~P{}{} & '.format(_x[0], _x[1]) for _x in positions[:-1]]
+    rv2 = ['~P{}{})'.format(positions[-1][0], positions[-1][1])]
+    return sentence_builder([rv, rv1, rv2])
 
 def which_position(location, some_number, logic_gen):
     """ Determine if location is a corner, edge or has 4 neighbors.
@@ -37,18 +119,18 @@ def which_position(location, some_number, logic_gen):
         - some_number (int): The largest x or y value which is a valid move.
     """
     xpos, ypos = location
-    if xpos == ypos or (1 in location and some_number in location):
-        #CORNER. 2- Neighbors.
-        # logic_gen(location, some_number)
-        pass
+    # Is this location in a corner?
+    upper_r = xpos == 4 and ypos == 4
+    lower_l = xpos == 1 and ypos == 1 
+    others = (1 in location and some_number in location)
+    if upper_r or lower_l or others:
+        return 2 # CORNER. 2- Neighbors.
+    # Is this location a non-edge (by priority) corner?
     elif (1 in location or some_number in location):
-        # EDGE. 3- Neighbors.
-        # logic_gen(location, some_number)
-        pass
+        return 3 # EDGE. 3- Neighbors.
+    # This is not a corner or an edge.
     else:
-        # Else 4- Neighbors.
-        # logic_gen(location, some_number)
-        pass
+        return 4 # Else 4- Neighbors.
 
 
 class OzKB(KB):
@@ -74,7 +156,6 @@ class OzKB(KB):
 def KnowledgeBasedReflexAgent(rules, update_state, dimens):
     """
     """
-
     knowledge = defaultdict(list)
     for xloc in range(dimens):
         for yloc in range(dimens):
@@ -88,7 +169,6 @@ class Agent(Thing):
     """ The player that we want to win.  Or lose depending on how evil you
     are. Inherit a thing.
     """
-
     def __init__(self, some_number, program=None):
         """
         """
@@ -167,6 +247,19 @@ class Board(XYEnvironment):
         super(Board, self).__init__(width, height)
         self.add_walls()
         self.remove_duplicate_walls()
+        #def get_static_board_layout(things, width, height):
+        self.matrix = None
+
+    def print_board(self):
+        if self.matrix is None:
+           self.matrix = get_static_board_layout(self.things, self.width, self.height) 
+        agent = self.agents[0]
+        xloc, yloc = agent.location
+        place_hold = self.matrix[self.height - yloc - 1][xloc]
+        self.matrix[self.height - yloc - 1][xloc] = agent
+        print_table(self.matrix)
+        self.matrix[self.height - yloc - 1][xloc] = place_hold
+        print ''
 
     def remove_duplicate_walls(self):
         """ The stupid self.add_walls() function duplicates some walls.
@@ -247,10 +340,12 @@ class Board(XYEnvironment):
         if abs(axloc - xloc) >= 1 and abs(ayloc - yloc) >= 1:
             print 'Invalid Choice.  You lose your turn dummy.'
             print 'You can only move one square at a time.'
+            return
         if abs(axloc - xloc) > 1 or abs(ayloc - yloc) > 1:
             print 'No Diagonal movement more than 1 duh'
             return
         agent.location = action
+        self.print_board()
 
     def default_location(self, thing):
         """
@@ -378,26 +473,46 @@ def make_board(some_number):
         row+=1
     return board
 
-def convert_to_dict(board):
-    d = {}
-    for n in board.things:
-        if isinstance(n,Pit):
-            x,y = n.location
-            d[x,y] = n
-        if isinstance(n,Gold):
-            x,y = n.location
-            d[x,y] = n
-    return d
+def get_static_board_layout(things, width, height):
+    obj_map = convert_to_dict(things)
+    matrix = []
+    for yloc in xrange(height):
+        row = []
+        for xloc in xrange(width):
+            if obj_map.has_key((xloc, yloc)):
+                row.append(obj_map[(xloc, yloc)])
+            else:
+                row.append('<---->')
+        matrix.insert(0, row)
+    return matrix
+
+def convert_to_dict(things):
+    rv_d = {}
+    for this_thing in things:
+        if isinstance(this_thing, Pit):
+            xloc, yloc = this_thing.location
+            rv_d[xloc, yloc] = this_thing
+        if isinstance(this_thing, Gold):
+            xloc, yloc = this_thing.location
+            rv_d[xloc, yloc] = this_thing
+        if isinstance(this_thing, Wall):
+            xloc, yloc = this_thing.location
+            rv_d[xloc, yloc] = this_thing
+    return rv_d
 
 
 if __name__ == '__main__':
     print 'updating\n'
     b = make_board(3)
+<<<<<<< HEAD
     print len(b.things)
     for t in b.things:
         print t, t.location
     out = convert_to_dict(b)
     print out 
+=======
+    b.print_board()
+>>>>>>> e5c942476083d974bad090bcf51f334c4ed61899
     #randompit = b.things[40]
     #print randompit.location
     ARGS = sys.argv
