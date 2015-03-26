@@ -9,13 +9,12 @@ import sys
 import random
 from collections import defaultdict
 from agents import Thing, XYEnvironment, Wall
-<<<<<<< HEAD
+
 from logic import KB, FolKB,PropKB,expr,dpll_satisfiable
 from logic import *
 
-=======
 from utils import print_table
->>>>>>> e5c942476083d974bad090bcf51f334c4ed61899
+
 from logic import KB, FolKB
 
 AGENT = 'A{}{}'
@@ -504,15 +503,15 @@ def convert_to_dict(things):
 if __name__ == '__main__':
     print 'updating\n'
     b = make_board(3)
-<<<<<<< HEAD
+
     print len(b.things)
     for t in b.things:
         print t, t.location
     out = convert_to_dict(b)
     print out 
-=======
+
     b.print_board()
->>>>>>> e5c942476083d974bad090bcf51f334c4ed61899
+
     #randompit = b.things[40]
     #print randompit.location
     ARGS = sys.argv
