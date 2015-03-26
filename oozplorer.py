@@ -151,15 +151,13 @@ class Gold(Thing):
     def show_state(self):
         print self.state 
 
-<<<<<<< HEAD
-=======
 
 class Breeze(Thing):
     def __init__(self, location=None):
         if location is not None:
             self.location = location
 
->>>>>>> e0ef8f31b1096945c30082f59958ccf636999117
+
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
     """
@@ -347,7 +345,7 @@ def parse_arguments(arguments):
         bail_out()
     return number
 
-<<<<<<< HEAD
+
 def generate():
     return random.random() <= p
 
@@ -380,6 +378,17 @@ def make_board(some_number):
         row+=1
     return board
 
+def convert_to_dict(board):
+    d = {}
+    for n in board.things:
+        if isinstance(n,Pit):
+            x,y = n.location
+            d[x,y] = n
+        if isinstance(n,Gold):
+            x,y = n.location
+            d[x,y] = n
+    return d
+
 
 if __name__ == '__main__':
     print 'updating\n'
@@ -387,6 +396,8 @@ if __name__ == '__main__':
     print len(b.things)
     for t in b.things:
         print t, t.location
+    out = convert_to_dict(b)
+    print out 
     #randompit = b.things[40]
     #print randompit.location
     ARGS = sys.argv
@@ -397,24 +408,10 @@ if __name__ == '__main__':
     #print NUMBER
 
 
-kb = PropKB()
-P = OzPit()
-Gold = expr(~G)
-Pit = expr(~P)
-Breeze = expr(~Breeze)
-e2 = expr("B21 ==> C11")
-kb.tell(Gold)
-kb.tell(Pit)
-C = expr("A11 & B21")
-P = expr("P")
-print kb.ask(~A) #returns empty clause {} thus true
-print kb.ask(P) #returns false
-
-print dpll_satisfiable(A & ~B & C & (A | ~D) & (~E | ~D) & (C | ~D) & (~A | ~F) & (E | ~F) & (~D | ~F) & (B | ~C | D) & (A | ~E | F) & (~A | E | D))
 
 
     #NUMBER = parse_arguments(ARGS)
-    b.run()
+
     #print NUMBER
 """ 
     pt = Pit()
