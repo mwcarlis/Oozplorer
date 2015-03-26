@@ -25,6 +25,27 @@ BREEZE_IFF = 'B{}{} <=> (P{}{} | P {}{} | P{}{} | P{}{})'
 # No breeze iff none of the neighbors have pits.
 N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P {}{} & ~P{}{} & ~P{}{})'
 
+def which_position(location, some_number, logic_gen):
+    """ Determine if location is a corner, edge or has 4 neighbors.
+
+    Args:
+        - location (tuple): (x, y) position of the map.
+        - some_number (int): The largest x or y value which is a valid move.
+    """
+    xpos, ypos = location
+    if xpos == ypos or (1 in location and some_number in location):
+        #CORNER. 2- Neighbors.
+        # logic_gen(location, some_number)
+        pass
+    elif (1 in location or some_number in location):
+        # EDGE. 3- Neighbors.
+        # logic_gen(location, some_number)
+        pass
+    else:
+        # Else 4- Neighbors.
+        # logic_gen(location, some_number)
+        pass
+
 class OzKB(KB):
     """ I don't know if we need this or if we can inherit something more 
             evolved from the logic.py classes.
@@ -71,6 +92,7 @@ class Agent(Thing):
         self.location = None
         if program is None:
             def program(percept):
+                program.dimens = some_number
                 if not self.alive:
                     return self.location
                 while True:
@@ -78,9 +100,9 @@ class Agent(Thing):
                     try:
                         move = tuple([int(val.strip(' ')) for val in ret_v.split(',')])
                         # Out of boundaries.
-                        if move[0] < 0 or move[1] < 0:
+                        if move[0] <= 0 or move[1] <= 0:
                             raise Exception('Continue')
-                        if move[0] > 9 or move[1] > 9:
+                        if move[0] > some_number or move[1] > some_number:
                             raise Exception('Continue')
                     except Exception:
                         print 'Invalid input.  Try: 1, 3   etc'
@@ -197,36 +219,18 @@ class Board(XYEnvironment):
     def default_location(self, thing):
         """
         """
-        get_rand = lambda arg: random.choice(range(1, arg))
         if isinstance(thing, Agent):
             return (1, 1)
-        elif isinstance(thing, Gold):
+        else:
+            get_rand = lambda arg: random.choice(range(1, arg-1))
             while True:
                 xloc, yloc = (get_rand(self.width), get_rand(self.height))
                 if (1, 1) == (xloc, yloc):
                     continue
                 break
+            if isinstance(thing, Gold):
+                print 'gold', xloc, yloc
             return (xloc, yloc)
-        else:
-            get_rand = lambda arg: random.choice(range(1, arg))
-            return (get_rand(self.width), get_rand(self.height))
-
-    def add_thing(self, thing, location=None):
-        """Add a thing to the environment, setting its location. For
-        convenience, if thing is an agent program we make a new agent
-        for it. (Shouldn't need to override this."""
-        #if not isinstance(thing, Thing):
-        #    thing = Agent(thing)
-        assert thing not in self.things, "Don't add the same thing twice"
-        thing.location = location or self.default_location(thing)
-        self.things.append(thing)
-        if isinstance(thing, Agent):
-            thing.performance = 0
-            self.agents.append(thing)
-        thing.holding = []
-        thing.held = None
-        for obs in self.observers:
-            obs.thing_added(thing)
 
     def move(self, pair):
         """
@@ -314,19 +318,22 @@ def make_board(some_number):
     board = Board(width=some_number + 2, height=some_number + 2)
     agent = Agent(some_number)
     gold = Gold()
-    board.add_thing(agent)
-    board.add_thing(gold)
+    board.add_thing(agent, None)
+    board.agents.append(agent)
+    board.add_thing(gold, None)
+    print gold.location
     row = 1
     for i in range(1, some_number + 1):
         col = 1
         #print "Row is %d" %row
         for j in range(1, some_number + 1):
             #print "Colum is %d" %col 
-            if generate():
+            if generate() and (row, col) != gold.location:
                 #print "Enters here"
-                pt = Pit()
-                pt.location = (row, col)
-                board.things.append(pt)
+                if (row, col) != gold.location and (row, col) != (1, 1):
+                    pt = Pit()
+                    pt.location = (row, col)
+                    board.things.append(pt)
             col = col + 1
         row+=1
     return board
@@ -334,12 +341,14 @@ def make_board(some_number):
 if __name__ == '__main__':
     b = make_board(3)
     print len(b.things)
+    for t in b.things:
+        print t, t.location
     #randompit = b.things[40]
     #print randompit.location
     print 'updating\n'
     ARGS = sys.argv
     #NUMBER = parse_arguments(ARGS)
-    #run_game(NUMBER)
+    b.run()
     #print NUMBER
 """ 
     pt = Pit()
