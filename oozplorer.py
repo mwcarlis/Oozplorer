@@ -6,6 +6,7 @@
 """
 import sys
 import random
+import copy
 from collections import defaultdict
 from agents import Thing, XYEnvironment, Wall
 from utils import print_table
@@ -195,59 +196,58 @@ def tell_kb(percept, location, oz_kb):
 def ask_kb(oz_kb):
     return False
 
+def do_work():
+    a = Agent(3)
+    a.location = 1,1
+    a.program = Oozeplorer_Percept(a)
+    print a.program(Breeze())
 #def _valid_neighbors(location, some_num):
 def Oozeplorer_Percept(reference):
     """ A standard input based agent.
     Args:
-        reference (Board): This is the reference to the board object
+        reference (Agent): This is the reference to the board object
             for which you will be using the stdin_agent().  Often this
             would be the 'self' pointer inside of a class.
     """
     self = reference
-    oz_kb = {}
-    explored = {} # The set of explored states.
-    frontier = [] # Stack of unchecked moves.
-    unsure_moves = [] # Popped moves we didn't want.
+    self.oz_kb = {}
+    self.explored = {} # The set of explored states.
+    self.our_frontier = list()
+    self.unsure_moves = list() # Popped moves we didn't want.
     def knowledge_based_program(percept):
         if not self.alive or self.winner:
             return self.location
         # Telling the Dict
-        tell_kb(percept, self.location, oz_kb)
+        tell_kb(percept, self.location, self.oz_kb)
         local_frontier = _valid_neighbors(self.location, self.some_number)
         n_count = 0
         for _x in range(len(local_frontier)):
             # Update the random moves.
             move = local_frontier[n_count]
-            if move in unsure_moves:
-                unsure_moves.remove(move)
+            if move in self.unsure_moves:
+                self.unsure_moves.remove(move)
             # Check if we've been there
-            if explored.has_key(move) and explored[move]:
+            if self.explored.has_key(move) and self.explored[move]:
                 local_frontier.pop(n_count) # remove this node
                 continue
             # Check for Validity.
-            valid_move = ask_kb(oz_kb)
+            valid_move = ask_kb(self.oz_kb)
             if valid_move:
+                temp = []
                 move = local_frontier.pop(n_count)
-                local_frontier.extend(frontier)
-                frontier = local_frontier
-                explored[move] = True
+                temp.extend(local_frontier)
+                temp.extend(self.our_frontier)
+                self.our_frontier = temp
+                self.explored[move] = True
                 return move
             else:
                 _nmove = local_frontier.pop(n_count)
-                unsure_moves.append(_nmove)
+                self.unsure_moves.append(_nmove)
                 continue 
-        move = random.choice(unsure_moves)
-        explored[move] = True
-        unsure_moves.remove(move)
+        move = random.choice(self.unsure_moves)
+        self.explored[move] = True
+        self.unsure_moves.remove(move)
         return move
-
-
-
-
-
-        # Ask
-        next_move = ask_kb()
-        return next_move
     return knowledge_based_program
 
 class Agent(Thing):
@@ -322,7 +322,6 @@ class Board(XYEnvironment):
         self.add_walls()
         self.remove_duplicate_walls()
         self.matrix = None
-        self.frontier = None
         self.make_board()
         self.print_board()
 
