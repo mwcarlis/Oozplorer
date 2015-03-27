@@ -183,16 +183,16 @@ EXPRS = { 'n_breeze': '~B{}{}',
           'pit': 'P{}{}'
 }
 
-def tell_kb(percept, location, kb_d):
+def tell_kb(percept, location, oz_kb):
     observed = []
     xloc, yloc = location
     if isinstance(percept, Breeze):
-        kb_d['B{}{}'.format(xloc, yloc)] = True 
+        oz_kb['B{}{}'.format(xloc, yloc)] = True 
     else:
-        kb_d['B{}{}'.format(xloc, yloc)] = False
-    kb_d['P{}{}'.format(xloc, yloc)] = False
+        oz_kb['B{}{}'.format(xloc, yloc)] = False
+    oz_kb['P{}{}'.format(xloc, yloc)] = False
 
-def ask_kb():
+def ask_kb(oz_kb):
     pass
 
 #def _valid_neighbors(location, some_num):
@@ -214,24 +214,25 @@ def Oozeplorer_Percept(reference):
         # Telling the Dict
         tell_kb(percept, self.location, oz_kb)
         frontier = _valid_neighbors(self.location, self.some_number)
-        for n_count in range(neighbors):
+        for n_count in range(frontier):
             # Update the random moves.
-            if neighbors[n_count] in random_moves:
-                random_moves.remove(neighbors[n_count])
+            move = frontier[n_cnt]
+            if move in random_moves:
+                random_moves.remove(move)
             # Check if we've been there
-            if explored.has_key(neighbors[n_count]) and neighbors[n_count]:
-                neighbors.pop(n_count)
+            if explored.has_key(move) and explored[move]:
+                frontier.pop(n_count) # remove this node
                 continue
             # Check for Validity.
-            # valid move = get
+            # valid move = ask_kb(oz_kb)
 
             # if not valid move:
-                # random_moves.append(neighbors[n_count])
-                # neighbors.pop(n_count)
+                # random_moves.append(frontier[n_count])
+                # frontier.pop(n_count)
                 # continue 
             # else:
-                # move = neighbors.pop(n_count)
-                # explored[neighbors[move]] = True
+                # move = frontier.pop(n_count)
+                # explored[move] = True
                 # return move
         move = random.choice(random_moves)
         explored[move] = True
