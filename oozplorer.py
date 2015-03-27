@@ -193,7 +193,7 @@ def tell_kb(percept, location, oz_kb):
     oz_kb['P{}{}'.format(xloc, yloc)] = False
 
 def ask_kb(oz_kb):
-    pass
+    return False
 
 #def _valid_neighbors(location, some_num):
 def Oozeplorer_Percept(reference):
@@ -206,37 +206,39 @@ def Oozeplorer_Percept(reference):
     self = reference
     oz_kb = {}
     explored = {} # The set of explored states.
-    #frontier = [] # Stack of unchecked moves.
-    random_moves = [] # Popped moves we didn't want.
+    frontier = [] # Stack of unchecked moves.
+    unsure_moves = [] # Popped moves we didn't want.
     def knowledge_based_program(percept):
         if not self.alive or self.winner:
             return self.location
         # Telling the Dict
         tell_kb(percept, self.location, oz_kb)
-        frontier = _valid_neighbors(self.location, self.some_number)
-        for n_count in range(frontier):
+        local_frontier = _valid_neighbors(self.location, self.some_number)
+        n_count = 0
+        for _x in range(len(local_frontier)):
             # Update the random moves.
-            move = frontier[n_cnt]
-            if move in random_moves:
-                random_moves.remove(move)
+            move = local_frontier[n_count]
+            if move in unsure_moves:
+                unsure_moves.remove(move)
             # Check if we've been there
             if explored.has_key(move) and explored[move]:
-                frontier.pop(n_count) # remove this node
+                local_frontier.pop(n_count) # remove this node
                 continue
             # Check for Validity.
-            # valid move = ask_kb(oz_kb)
-
-            # if not valid move:
-                # random_moves.append(frontier[n_count])
-                # frontier.pop(n_count)
-                # continue 
-            # else:
-                # move = frontier.pop(n_count)
-                # explored[move] = True
-                # return move
-        move = random.choice(random_moves)
+            valid_move = ask_kb(oz_kb)
+            if valid_move:
+                move = local_frontier.pop(n_count)
+                local_frontier.extend(frontier)
+                frontier = local_frontier
+                explored[move] = True
+                return move
+            else:
+                _nmove = local_frontier.pop(n_count)
+                unsure_moves.append(_nmove)
+                continue 
+        move = random.choice(unsure_moves)
         explored[move] = True
-        random_moves.remove(move)
+        unsure_moves.remove(move)
         return move
 
 
