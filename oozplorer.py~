@@ -8,22 +8,95 @@ import sys
 import random
 from collections import defaultdict
 from agents import Thing, XYEnvironment, Wall
+from utils import print_table
 from logic import KB, FolKB
+from logic import *
 
 AGENT = 'A{}{}'
 GOLD = 'G{}{}'
 PIT = 'P{}{}'
 BREEZE = 'B{}{}'
 
-# A Pit iff all his neighbors have breezes
-PIT_IFF = 'P{}{} <=> (B{}{} & B{}{} & B{}{} & B{}{})'
-# No pit iff one or more neighbors has no breeze.
-N_PIT_IFF = '~P{}{} <=> (~B{}{} | ~B{}{} | ~B{}{} | ~B{}{})'
+def is_iterable(thing):
+    try: iter(thing)
+    except TypeError: return False
+    else: return True
 
-# A breeze iff one or more neighbors has a pit
-BREEZE_IFF = 'B{}{} <=> (P{}{} | P {}{} | P{}{} | P{}{})'
-# No breeze iff none of the neighbors have pits.
-N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P {}{} & ~P{}{} & ~P{}{})'
+def sentence_builder(some_val):
+    """ A simple decorator to create boolean expressions.
+    """
+    rv_s = ''
+    if isinstance(some_val, str): return some_val
+    for item in some_val:
+        if is_iterable(item):
+            rv_s += sentence_builder(item)
+    return rv_s
+
+def _valid_neighbors(location, some_num):
+    """ Return a list of the valid neighboring coordinates.
+
+    Args:
+        location (tuple): of (x, y) cordinates.
+        some_num (int): The game some_num.
+    """
+    xloc, yloc = location
+    vector = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+    ret_v = []
+    for vect in vector:
+        xpos = xloc + vect[0]
+        ypos = yloc + vect[1]
+        if xpos <= 0 or ypos <= 0:
+            continue
+        if xpos > some_num or ypos > some_num:
+            continue
+        ret_v.append((xpos, ypos))
+    return ret_v
+
+def _iff_format(location, some_num, sentence, loop=False):
+    """
+    Args:
+        location (tuple): of (x, y) cordinates.
+        some_num (int): The game some_num.
+        sentence (str): The string to apply formatting
+    """
+    positions = _valid_neighbors(location, some_num)
+    repeat = len(positions) - 1
+    xloc, yloc = location
+    loc_master = lambda statement: statement.format(xloc, yloc)
+    if loop:
+        rv = [sentence[0].format(_x[0], _x[1]) for _x in positions[:-1]]
+        rv.append(sentence[1].format(positions[-1][0], positions[-1][1]))
+        return rv
+    return [loc_master(sentence)]
+
+def pit_iff(location, some_num):
+    """Args:
+        location (tuple): of (x, y) cordinates.
+        some_num (int): The game some_num.
+    """
+    # A Pit iff all his neighbors have breezes
+    #PIT_IFF = 'P{}{} <=> (B{}{} & B{}{} & B{}{} & B{}{})'
+    rv = _iff_format(location, some_num, 'P{}{} <=> (')
+    rv.extend(_iff_format(location, some_num, ['B{}{} & ', 'B{}{})'], loop=True))
+    return sentence_builder(rv)
+def not_pit_iff(location, some_num):
+    # No pit iff one or more neighbors has no breeze.
+    #N_PIT_IFF = '~P{}{} <=> (~B{}{} | ~B{}{} | ~B{}{} | ~B{}{})'
+    rv = _iff_format(location, some_num, '~P{}{} <=> (')
+    rv.extend(_iff_format(location, some_num, ['~B{}{} | ', '~B{}{})'], loop=True))
+    return sentence_builder(rv)
+def breeze_iff(location, some_num):
+    # A breeze iff one or more neighbors has a pit
+    #BREEZE_IFF = 'B{}{} <=> (P{}{} | P{}{} | P{}{} | P{}{})'
+    rv = _iff_format(location, some_num, 'B{}{} <=> (')
+    rv.extend(_iff_format(location, some_num, ['P{}{} | ', 'P{}{})'], loop=True))
+    return sentence_builder(rv)
+def not_breeze_iff(location, some_num):
+    # No breeze iff none of the neighbors have pits.
+    #N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P{}{} & ~P{}{} & ~P{}{})'
+    rv = _iff_format(location, some_num, '~B{}{} <=> (')
+    rv.extend(_iff_format(location, some_num, ['~P{}{} & ', '~P{}{})'], loop=True))
+    return sentence_builder(rv)
 
 def which_position(location, some_number, logic_gen):
     """ Determine if location is a corner, edge or has 4 neighbors.
@@ -33,18 +106,18 @@ def which_position(location, some_number, logic_gen):
         - some_number (int): The largest x or y value which is a valid move.
     """
     xpos, ypos = location
-    if xpos == ypos or (1 in location and some_number in location):
-        #CORNER. 2- Neighbors.
-        # logic_gen(location, some_number)
-        pass
+    # Is this location in a corner?
+    upper_r = xpos == 4 and ypos == 4
+    lower_l = xpos == 1 and ypos == 1 
+    others = (1 in location and some_number in location)
+    if upper_r or lower_l or others:
+        return 2 # CORNER. 2- Neighbors.
+    # Is this location a non-edge (by priority) corner?
     elif (1 in location or some_number in location):
-        # EDGE. 3- Neighbors.
-        # logic_gen(location, some_number)
-        pass
+        return 3 # EDGE. 3- Neighbors.
+    # This is not a corner or an edge.
     else:
-        # Else 4- Neighbors.
-        # logic_gen(location, some_number)
-        pass
+        return 4 # Else 4- Neighbors.
 
 class OzKB(KB):
     """ I don't know if we need this or if we can inherit something more 
@@ -69,7 +142,6 @@ class OzKB(KB):
 def KnowledgeBasedReflexAgent(rules, update_state, dimens):
     """
     """
-
     knowledge = defaultdict(list)
     for xloc in range(dimens):
         for yloc in range(dimens):
@@ -79,37 +151,50 @@ def KnowledgeBasedReflexAgent(rules, update_state, dimens):
         return action
     return program
 
+def get_stdin_agent(reference):
+    """ A standard input based agent.
+    Args:
+        reference (Board): This is the reference to the board object
+            for which you will be using the stdin_agent().  Often this
+            would be the 'self' pointer inside of a class.
+    """
+    self = reference
+    def stdin_agent(percept):
+        if not self.alive or self.winner:
+            return self.location
+        while True:
+            ret_v = raw_input('percept=%s; action: x, y? ' % percept)
+            try:
+                move = tuple([int(val.strip(' ')) for val in ret_v.split(',')])
+                # Out of boundaries.
+                if move[0] <= 0 or move[1] <= 0:
+                    raise Exception('Continue')
+                if move[0] > self.some_number or move[1] > self.some_number:
+                    raise Exception('Continue')
+            except Exception:
+                print 'Invalid input.  Try: 1, 3   etc'
+                continue
+            break
+        return move
+    return stdin_agent
+
+
 class Agent(Thing):
     """ The player that we want to win.  Or lose depending on how evil you
     are. Inherit a thing.
     """
-
     def __init__(self, some_number, program=None):
         """
         """
         self.alive = True
         self.winner = False
+        if program is None:
+            program = get_stdin_agent(self)
+        assert callable(program)
+        self.program = program
+
         self.some_number = some_number
         self.location = None
-        if program is None:
-            def program(percept):
-                program.dimens = some_number
-                if not self.alive or self.winner:
-                    return self.location
-                while True:
-                    ret_v = raw_input('percept=%s; action: x, y?' % percept)
-                    try:
-                        move = tuple([int(val.strip(' ')) for val in ret_v.split(',')])
-                        # Out of boundaries.
-                        if move[0] <= 0 or move[1] <= 0:
-                            raise Exception('Continue')
-                        if move[0] > some_number or move[1] > some_number:
-                            raise Exception('Continue')
-                    except Exception:
-                        print 'Invalid input.  Try: 1, 3   etc'
-                        continue
-                    break
-                return move
         assert callable(program)
         self.program = program
 
@@ -155,12 +240,29 @@ class Breeze(Thing):
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
     """
-    def __init__(self, width=10, height=10):
+    def __init__(self, some_number):
         """
         """
-        super(Board, self).__init__(width, height)
+        # some_number + 2 since the map is surrounded by walls.  2 extra cols/rows
+        super(Board, self).__init__(some_number+2, some_number+2)
+        self.some_number = some_number
         self.add_walls()
         self.remove_duplicate_walls()
+        self.matrix = None
+        self.frontier = None
+        self.make_board()
+        self.print_board()
+
+    def print_board(self):
+        if self.matrix is None:
+           self.matrix = get_static_board_layout(self.things, self.width, self.height) 
+        agent = self.agents[0]
+        xloc, yloc = agent.location
+        place_hold = self.matrix[self.height - yloc - 1][xloc]
+        self.matrix[self.height - yloc - 1][xloc] = agent
+        print_table(self.matrix)
+        self.matrix[self.height - yloc - 1][xloc] = place_hold
+        print ''
 
     def remove_duplicate_walls(self):
         """ The stupid self.add_walls() function duplicates some walls.
@@ -237,10 +339,12 @@ class Board(XYEnvironment):
         if abs(axloc - xloc) >= 1 and abs(ayloc - yloc) >= 1:
             print 'Invalid Choice.  You lose your turn dummy.'
             print 'You can only move one square at a time.'
+            return
         if abs(axloc - xloc) > 1 or abs(ayloc - yloc) > 1:
             print 'No Diagonal movement more than 1 duh'
             return
         agent.location = action
+        self.print_board()
 
     def default_location(self, thing):
         """
@@ -255,6 +359,24 @@ class Board(XYEnvironment):
                     continue
                 break
             return (xloc, yloc)
+
+    def make_board(self):
+        """ Initialize the board according to assignment specs
+        """
+        generate = lambda: random.randint(1, 10) in [1, 2]
+        some_number = self.some_number
+        agent = Agent(some_number)
+        gold = Gold()
+        self.add_thing(agent, None)
+        self.agents.append(agent)
+        self.add_thing(gold, None)
+        for row in range(1, some_number + 1):
+            for col in range(1, some_number + 1):
+                if generate() and (row, col) != gold.location:
+                    if (row, col) != gold.location and (row, col) != (1, 1):
+                        pt = Pit()
+                        pt.location = (row, col)
+                        self.things.append(pt)
 
     def move(self, pair):
         """
@@ -335,44 +457,45 @@ def parse_arguments(arguments):
         bail_out()
     return number
 
-def make_board(some_number):
-    generate = lambda: random.randint(1, 10) in [1, 2]
 
-    # some_number + 2 since the map is surrounded by walls.  2 extra cols/rows
-    board = Board(width=some_number + 2, height=some_number + 2)
-    agent = Agent(some_number)
-    gold = Gold()
-    board.add_thing(agent, None)
-    board.agents.append(agent)
-    board.add_thing(gold, None)
-    row = 1
-    for i in range(1, some_number + 1):
-        col = 1
-        #print "Row is %d" %row
-        for j in range(1, some_number + 1):
-            #print "Colum is %d" %col 
-            if generate() and (row, col) != gold.location:
-                #print "Enters here"
-                if (row, col) != gold.location and (row, col) != (1, 1):
-                    pt = Pit()
-                    pt.location = (row, col)
-                    board.things.append(pt)
-            col = col + 1
-        row+=1
-    return board
+def get_static_board_layout(things, width, height):
+    obj_map = convert_to_dict(things)
+    matrix = []
+    for yloc in xrange(height):
+        row = []
+        for xloc in xrange(width):
+            if obj_map.has_key((xloc, yloc)):
+                row.append(obj_map[(xloc, yloc)])
+            else:
+                row.append('<---->')
+        matrix.insert(0, row)
+    return matrix
+
+def convert_to_dict(things):
+    rv_d = {}
+    for this_thing in things:
+        if isinstance(this_thing, Pit):
+            xloc, yloc = this_thing.location
+            rv_d[xloc, yloc] = this_thing
+        if isinstance(this_thing, Gold):
+            xloc, yloc = this_thing.location
+            rv_d[xloc, yloc] = this_thing
+        if isinstance(this_thing, Wall):
+            xloc, yloc = this_thing.location
+            rv_d[xloc, yloc] = this_thing
+    return rv_d
+
 
 if __name__ == '__main__':
     print 'updating\n'
-    b = make_board(3)
-    print len(b.things)
-    for t in b.things:
-        print t, t.location
-    #randompit = b.things[40]
-    #print randompit.location
     ARGS = sys.argv
-    #NUMBER = parse_arguments(ARGS)
-    b.run()
-    #print NUMBER
+    b = Board(4)
+   # b.run()
+
+pit = pit_iff((2,2),4)
+
+print pit
+print dpll_satisfiable(expr(pit))
 """ 
     pt = Pit()
     bd = Board()

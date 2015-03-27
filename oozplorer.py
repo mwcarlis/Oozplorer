@@ -10,6 +10,7 @@ from collections import defaultdict
 from agents import Thing, XYEnvironment, Wall
 from utils import print_table
 from logic import KB, FolKB
+from logic import *
 
 AGENT = 'A{}{}'
 GOLD = 'G{}{}'
@@ -488,8 +489,13 @@ def convert_to_dict(things):
 if __name__ == '__main__':
     print 'updating\n'
     ARGS = sys.argv
-    b = Board(3)
+    b = Board(4)
     b.run()
+
+#pit = pit_iff((2,2),4)
+
+#print pit
+#print dpll_satisfiable(expr(pit))
 """ 
     pt = Pit()
     bd = Board()
