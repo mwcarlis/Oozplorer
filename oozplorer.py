@@ -213,6 +213,7 @@ def Oozeplorer_Percept(reference):
         if not self.alive or self.winner:
             return self.location
         # Telling the Dict
+        print frontier
         tell_kb(percept, self.location, oz_kb)
         local_frontier = _valid_neighbors(self.location, self.some_number)
         n_count = 0

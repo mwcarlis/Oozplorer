@@ -178,6 +178,78 @@ def get_stdin_agent(reference):
         return move
     return stdin_agent
 
+EXPRS = { 'n_breeze': '~B{}{}', 
+          'breeze:': 'B{}{}', 
+          'n_pit': '~P{}{}', 
+          'pit': 'P{}{}'
+}
+
+def tell_kb(percept, location, oz_kb):
+    observed = []
+    xloc, yloc = location
+    if isinstance(percept, Breeze):
+        oz_kb['B{}{}'.format(xloc, yloc)] = True 
+    else:
+        oz_kb['B{}{}'.format(xloc, yloc)] = False
+    oz_kb['P{}{}'.format(xloc, yloc)] = False
+
+def ask_kb(oz_kb):
+    return False
+
+#def _valid_neighbors(location, some_num):
+def Oozeplorer_Percept(reference):
+    """ A standard input based agent.
+    Args:
+        reference (Board): This is the reference to the board object
+            for which you will be using the stdin_agent().  Often this
+            would be the 'self' pointer inside of a class.
+    """
+    self = reference
+    oz_kb = {}
+    explored = {} # The set of explored states.
+    frontier = [] # Stack of unchecked moves.
+    unsure_moves = [] # Popped moves we didn't want.
+    def knowledge_based_program(percept):
+        if not self.alive or self.winner:
+            return self.location
+        # Telling the Dict
+        tell_kb(percept, self.location, oz_kb)
+        local_frontier = _valid_neighbors(self.location, self.some_number)
+        n_count = 0
+        for _x in range(len(local_frontier)):
+            # Update the random moves.
+            move = local_frontier[n_count]
+            if move in unsure_moves:
+                unsure_moves.remove(move)
+            # Check if we've been there
+            if explored.has_key(move) and explored[move]:
+                local_frontier.pop(n_count) # remove this node
+                continue
+            # Check for Validity.
+            valid_move = ask_kb(oz_kb)
+            if valid_move:
+                move = local_frontier.pop(n_count)
+                local_frontier.extend(frontier)
+                frontier = local_frontier
+                explored[move] = True
+                return move
+            else:
+                _nmove = local_frontier.pop(n_count)
+                unsure_moves.append(_nmove)
+                continue 
+        move = random.choice(unsure_moves)
+        explored[move] = True
+        unsure_moves.remove(move)
+        return move
+
+
+
+
+
+        # Ask
+        next_move = ask_kb()
+        return next_move
+    return knowledge_based_program
 
 class Agent(Thing):
     """ The player that we want to win.  Or lose depending on how evil you
@@ -186,17 +258,15 @@ class Agent(Thing):
     def __init__(self, some_number, program=None):
         """
         """
+        self.some_number = some_number
+        self.performance = 0
         self.alive = True
         self.winner = False
         if program is None:
             program = get_stdin_agent(self)
         assert callable(program)
         self.program = program
-
-        self.some_number = some_number
         self.location = None
-        assert callable(program)
-        self.program = program
 
     def is_alive(self):
         return self.alive
@@ -210,6 +280,9 @@ class Agent(Thing):
         playing = True
         while playing:
             playing = False
+
+    def observe(percept):
+        pass
 
 class Pit(Thing):
     """ The pit for this game. Inherit a thing.
@@ -236,6 +309,7 @@ class Breeze(Thing):
     def __init__(self, location=None):
         if location is not None:
             self.location = location
+
 
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
@@ -372,11 +446,11 @@ class Board(XYEnvironment):
         self.add_thing(gold, None)
         for row in range(1, some_number + 1):
             for col in range(1, some_number + 1):
-                if generate() and (row, col) != gold.location:
-                    if (row, col) != gold.location and (row, col) != (1, 1):
-                        pt = Pit()
-                        pt.location = (row, col)
-                        self.things.append(pt)
+                valid_spot = (row, col) != gold.location and (row, col) != (1, 1) 
+                if valid_spot and generate():
+                    pt = Pit()
+                    pt.location = (row, col)
+                    self.things.append(pt)
 
     def move(self, pair):
         """
@@ -490,12 +564,12 @@ if __name__ == '__main__':
     print 'updating\n'
     ARGS = sys.argv
     b = Board(4)
-   # b.run()
+    b.run()
 
-pit = pit_iff((2,2),4)
+#pit = pit_iff((2,2),4)
 
-print pit
-print dpll_satisfiable(expr(pit))
+#print pit
+#print dpll_satisfiable(expr(pit))
 """ 
     pt = Pit()
     bd = Board()
