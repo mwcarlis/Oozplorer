@@ -10,7 +10,7 @@ import copy
 from collections import defaultdict
 from agents import Thing, XYEnvironment, Wall
 from utils import print_table
-from logic import KB, FolKB
+from logic import dpll_satisfiable, expr
 
 AGENT = 'A{}{}'
 GOLD = 'G{}{}'
@@ -119,26 +119,6 @@ def which_position(location, some_number, logic_gen):
     else:
         return 4 # Else 4- Neighbors.
 
-class OzKB(KB):
-    """ I don't know if we need this or if we can inherit something more 
-            evolved from the logic.py classes.
-        Inherit a KB.
-    """
-    def __init__(self, sentence=None):
-        self.sentence = sentence
-    def tell(self, sentence):
-        """ Implement parent->KB.tell()
-        """
-        pass
-    def ask_generator(self, query):
-        """ Implement parent->KB.ask_generator()
-        """
-        pass
-    def retract(self, sentence):
-        """ Implement parent->KB.retract()
-        """
-        pass
-
 def KnowledgeBasedReflexAgent(rules, update_state, dimens):
     """
     """
@@ -193,15 +173,29 @@ def tell_kb(percept, location, oz_kb):
         oz_kb['B{}{}'.format(xloc, yloc)] = False
     oz_kb['P{}{}'.format(xloc, yloc)] = False
 
-def ask_kb(oz_kb):
+def get_stuff():
+    a = Agent(3)
+    #a.location = 1,1
+    a._init_agent((1,1))
+    a.program = Oozeplorer_Percept(a)
+    return a
+
+def ask_kb(percept, move, agent):
+    #print percept
+    oz_kb = agent.oz_kb
+    sentence = pit_iff(move, agent.some_number)
+    satisfy = dpll_satisfiable(expr(sentence))
+    isin_kb = lambda item_s: oz_kb.has_key(item_s)
+    contradicts_kb = lambda item_s, obj: oz_kb[item_s] != satisfy[obj]
+    #print sentence
+    for key in satisfy.keys():
+        var = key.__repr__()
+        if isin_kb(var) and contradicts_kb(var, key):
+            #print 'asking true', oz_kb[var], satisfy[key], key
+            return True
+    #print 'asking false'
     return False
 
-def do_work():
-    a = Agent(3)
-    a.location = 1,1
-    a.program = Oozeplorer_Percept(a)
-    print a.program(Breeze())
-#def _valid_neighbors(location, some_num):
 def Oozeplorer_Percept(reference):
     """ A standard input based agent.
     Args:
@@ -210,8 +204,6 @@ def Oozeplorer_Percept(reference):
             would be the 'self' pointer inside of a class.
     """
     self = reference
-    self.oz_kb = {}
-    self.explored = {} # The set of explored states.
     self.our_frontier = list()
     self.unsure_moves = list() # Popped moves we didn't want.
     def knowledge_based_program(percept):
@@ -220,6 +212,8 @@ def Oozeplorer_Percept(reference):
         # Telling the Dict
         tell_kb(percept, self.location, self.oz_kb)
         local_frontier = _valid_neighbors(self.location, self.some_number)
+        random.shuffle(local_frontier)
+        local_frontier.extend(self.our_frontier)
         n_count = 0
         for _x in range(len(local_frontier)):
             # Update the random moves.
@@ -231,14 +225,12 @@ def Oozeplorer_Percept(reference):
                 local_frontier.pop(n_count) # remove this node
                 continue
             # Check for Validity.
-            valid_move = ask_kb(self.oz_kb)
+            valid_move = ask_kb(percept, move, self)
             if valid_move:
-                temp = []
                 move = local_frontier.pop(n_count)
-                temp.extend(local_frontier)
-                temp.extend(self.our_frontier)
-                self.our_frontier = temp
+                self.our_frontier = local_frontier
                 self.explored[move] = True
+                #print 'valid', move
                 return move
             else:
                 _nmove = local_frontier.pop(n_count)
@@ -247,6 +239,7 @@ def Oozeplorer_Percept(reference):
         move = random.choice(self.unsure_moves)
         self.explored[move] = True
         self.unsure_moves.remove(move)
+        #print 'random', move
         return move
     return knowledge_based_program
 
@@ -261,6 +254,8 @@ class Agent(Thing):
         self.performance = 0
         self.alive = True
         self.winner = False
+        self.oz_kb = {}
+        self.explored = {} # The set of explored states.
         if program is None:
             program = get_stdin_agent(self)
         assert callable(program)
@@ -271,6 +266,13 @@ class Agent(Thing):
         return self.alive
     def is_winner(self):
         return self.winner
+
+    def _init_agent(self, location):
+        if self.location is None:
+            self.location = location
+            self.explored[self.location] = True
+            return True
+        return False
 
     def start(self):
         """ Start the game and loop over the moves etc breaking when
@@ -333,7 +335,8 @@ class Board(XYEnvironment):
         place_hold = self.matrix[self.height - yloc - 1][xloc]
         self.matrix[self.height - yloc - 1][xloc] = agent
         print_table(self.matrix)
-        self.matrix[self.height - yloc - 1][xloc] = place_hold
+        #self.matrix[self.height - yloc - 1][xloc] = place_hold
+        self.matrix[self.height - yloc - 1][xloc] = '<*  *>'
         print ''
 
     def remove_duplicate_walls(self):
@@ -385,7 +388,7 @@ class Board(XYEnvironment):
         """
         dead = not any(agent.is_alive() for agent in self.agents)
         winner = any(agent.is_winner() for agent in self.agents)
-        def winner_msg(msg):
+        def end_game_msg(msg):
             try: # This is a hack to avoid printing the winning message twice.
                 if not self.printed_message:
                     pass # We already printed.
@@ -393,10 +396,10 @@ class Board(XYEnvironment):
                 self.printed_message = True
                 print msg
         if dead:
-            winner_msg('Your Agent Died')
+            end_game_msg('Your Agent Died')
             return dead
         elif winner:
-            winner_msg('Your Agent Wins')
+            end_game_msg('Your Agent Wins')
             return winner
         return False
 
@@ -408,13 +411,13 @@ class Board(XYEnvironment):
         agent.bump = False
         xloc, yloc = agent.location
         axloc, ayloc = action
-        if abs(axloc - xloc) >= 1 and abs(ayloc - yloc) >= 1:
-            print 'Invalid Choice.  You lose your turn dummy.'
-            print 'You can only move one square at a time.'
-            return
-        if abs(axloc - xloc) > 1 or abs(ayloc - yloc) > 1:
-            print 'No Diagonal movement more than 1 duh'
-            return
+        #if abs(axloc - xloc) >= 1 and abs(ayloc - yloc) >= 1:
+        #    print 'Invalid Choice.  You lose your turn dummy.'
+        #    print 'You can only move one square at a time.'
+        #    return
+        #if abs(axloc - xloc) > 1 or abs(ayloc - yloc) > 1:
+        #    print 'No Diagonal movement more than 1 duh'
+        #    return
         agent.location = action
         self.print_board()
 
@@ -432,15 +435,22 @@ class Board(XYEnvironment):
                 break
             return (xloc, yloc)
 
+    def add_agent(self, agent):
+        assert isinstance(agent, Agent)
+        xloc, yloc = self.default_location(agent)
+        agent._init_agent((xloc, yloc))
+        self.things.append(agent)
+        self.agents.append(agent)
+
     def make_board(self):
         """ Initialize the board according to assignment specs
         """
         generate = lambda: random.randint(1, 10) in [1, 2]
         some_number = self.some_number
         agent = Agent(some_number)
+        agent.program = Oozeplorer_Percept(agent)
+        self.add_agent(agent)
         gold = Gold()
-        self.add_thing(agent, None)
-        self.agents.append(agent)
         self.add_thing(gold, None)
         for row in range(1, some_number + 1):
             for col in range(1, some_number + 1):
@@ -561,7 +571,7 @@ def convert_to_dict(things):
 if __name__ == '__main__':
     print 'updating\n'
     ARGS = sys.argv
-    b = Board(3)
+    b = Board(6)
     b.run()
 """ 
     pt = Pit()
