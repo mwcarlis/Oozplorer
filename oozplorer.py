@@ -3,10 +3,16 @@
 - Matthew Carlis
 - Chris Nguyen
 - Shunt Balushian
+
+
+start() -  This function is inherited from agents.Environment which is named run().
+    This method is called at line 598
+
+move() - This function is on line 470
 """
-import sys
+import sys, time
 import random
-from agents import Thing, XYEnvironment, Wall
+from agents import Thing, XYEnvironment
 from utils import print_table
 from logic import dpll_satisfiable, expr
 
@@ -170,10 +176,15 @@ def ask_kb(percept, move, agent):
     satisfy_dpll = dpll_satisfiable(expr(sentence))
     isin_kb = lambda item_s: oz_kb.has_key(item_s)
     contradicts_kb = lambda item_s, obj: oz_kb[item_s] != satisfy_dpll[obj]
+    has_all = True
     for key in satisfy_dpll.keys():
         var = key.__repr__()
         if isin_kb(var) and contradicts_kb(var, key):
             return True
+        if not isin_kb(var):
+            has_all = False
+    if has_all:
+        agent.explored[move] = True
     return False
 
 def Oozeplorer_Percept(reference):
@@ -195,32 +206,29 @@ def Oozeplorer_Percept(reference):
         # Telling the Dict
         tell_kb(percept, self.location, self.oz_kb)
         local_frontier = _valid_neighbors(self.location, self.some_number)
-        random.shuffle(local_frontier)
-        local_frontier.extend(self.our_frontier)
+        self.our_frontier.extend(local_frontier)
         n_count = 0
-        for _x in range(len(local_frontier)):
+        for _x in range(len(self.our_frontier)):
             # Update the random moves.
-            move = local_frontier[n_count]
+            move = self.our_frontier[n_count]
             if move in self.unsure_moves:
                 self.unsure_moves.remove(move)
-            # Check if we've been there
             if self.explored.has_key(move) and self.explored[move]:
-                local_frontier.pop(n_count) # remove this node
+                self.our_frontier.pop(0)
                 continue
             # Check for Validity.
             valid_move = ask_kb(percept, move, self)
             if valid_move:
-                move = local_frontier.pop(n_count)
-                self.our_frontier = local_frontier
+                move = self.our_frontier.pop(n_count)
                 self.explored[move] = True
                 return move
             else:
-                _nmove = local_frontier.pop(n_count)
-                self.unsure_moves.append(_nmove)
+                _nmove = self.our_frontier.pop(n_count)
+                if not self.explored.has_key(_nmove):
+                    self.unsure_moves.append(_nmove)
                 continue
-        move = random.choice(self.unsure_moves)
+        move = self.unsure_moves.pop(0)
         self.explored[move] = True
-        self.unsure_moves.remove(move)
         return move
     return knowledge_based_program
 
@@ -240,6 +248,9 @@ class Agent(Thing):
         assert callable(program)
         self.program = program
         self.location = None
+
+    def __repr__(self):
+        return '@'
 
     def is_alive(self):
         """Return true if alive"""
@@ -275,6 +286,8 @@ class Pit(Thing):
         super(Thing, self).__init__()
     def show_state(self):
         print self.state
+    def __repr__(self):
+        return 'P'
 
 class Gold(Thing):
     """ The goal for this game. Inherit a thing.
@@ -285,6 +298,8 @@ class Gold(Thing):
         super(Thing, self).__init__()
     def show_state(self):
         print self.state
+    def __repr__(self):
+        return 'G'
 
 class Breeze(Thing):
     """ A breeze object
@@ -293,6 +308,12 @@ class Breeze(Thing):
         if location is not None:
             self.location = location
         super(Thing, self).__init__()
+
+class Wall(Thing):
+    def __init__(self):
+        self.location = None
+    def __repr__(self):
+        return ''
 
 
 class Board(XYEnvironment):
@@ -310,18 +331,36 @@ class Board(XYEnvironment):
         self.make_board()
         self.print_board()
 
+
+    def add_walls(self):
+        "Put walls around the entire perimeter of the grid."
+        for x in range(self.width):
+            self.add_thing(Wall(), (x, 0))
+            self.add_thing(Wall(), (x, self.height-1))
+        for y in range(self.height):
+            self.add_thing(Wall(), (0, y))
+            self.add_thing(Wall(), (self.width-1, y))
+
     def print_board(self):
         """ Print the board.
         """
-        if self.matrix is None:
-            self.matrix = get_static_board_layout(self.things, self.width, self.height)
         if self.silent:
             return
+        if self.matrix is None:
+            self.move_cnt = 0
+            self.matrix = get_static_board_layout(self.things, self.width, self.height)
+        #else:
+        #    print chr(27) + "[2J"
+        print 'Move {}'.format(self.move_cnt)
+        self.move_cnt += 1
         agent = self.agents[0]
         xloc, yloc = agent.location
-        self.matrix[self.height - yloc - 1][xloc] = agent
-        print_table(self.matrix)
-        self.matrix[self.height - yloc - 1][xloc] = '<*  *>'
+        try:
+            self.matrix[len(self.matrix) - yloc][xloc - 1] = agent
+        except:
+            print self.height, yloc, xloc
+        print_table(self.matrix, sep='')
+        self.matrix[len(self.matrix) - yloc][xloc - 1] = '@'
         print ''
 
     def remove_duplicate_walls(self):
@@ -457,6 +496,7 @@ class Board(XYEnvironment):
         if isinstance(percepts, Breeze):
             sensor = True
         self.print_board()
+        time.sleep(1)
         return (sensor, state)
 
 
@@ -499,13 +539,13 @@ def get_static_board_layout(things, width, height):
     """
     obj_map = convert_to_dict(things)
     matrix = []
-    for yloc in xrange(height):
+    for yloc in xrange(1, height-1):
         row = []
-        for xloc in xrange(width):
+        for xloc in xrange(1, width-1):
             if obj_map.has_key((xloc, yloc)):
                 row.append(obj_map[(xloc, yloc)])
             else:
-                row.append('<---->')
+                row.append('.')
         matrix.insert(0, row)
     return matrix
 
@@ -521,6 +561,9 @@ def convert_to_dict(things):
             xloc, yloc = this_thing.location
             rv_d[xloc, yloc] = this_thing
         if isinstance(this_thing, Wall):
+            xloc, yloc = this_thing.location
+            rv_d[xloc, yloc] = this_thing
+        if isinstance(this_thing, Agent):
             xloc, yloc = this_thing.location
             rv_d[xloc, yloc] = this_thing
     return rv_d
@@ -548,40 +591,9 @@ def parse_arguments(arguments):
     return number
 
 if __name__ == '__main__':
-    print 'updating\n'
+    #print 'updating\n'
     ARGS = sys.argv
     SOME_NUM = parse_arguments(ARGS)
     _B = Board(SOME_NUM)
     _B.run()
 
-    # wins = 0
-    # for num in range(1000):
-    #     B_ = Board(SOME_NUM, prob_pit=20, silent=True)
-    #     B_.run()
-    #     if B_.agents[0].is_winner():
-    #         wins += 1
-    # print 'Win Ratio:', ((wins*1.0) / 1000) * 100
-"""
-    pt = Pit()
-    bd = Board()
-    ag = Agent(3)
-    ag.location = (1, 1)
-    pt.location = (2, 2)
-    bd.agents.append(ag)
-    print bd.agents
-    bd.things.append(ag)
-    bd.things.append(pt)
-    print len(bd.things)
-    print bd.percept(ag)
-    ag.location = (2, 1)
-    print bd.percept(ag)
-    ag.location = (1, 1)
-    print bd.pe
-    rcept(ag)
-    print 'INITIAL MAP'
-    print '   . . .   '
-    print '   . P .   '
-    print '   A . .   '
-    print 'Move around the Pit and sense him or try to die.'
-    bd.run()
-"""
