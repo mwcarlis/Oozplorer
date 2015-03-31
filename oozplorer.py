@@ -7,13 +7,13 @@
 """
 import sys
 import random
-from collections import defaultdict
 from agents import Thing, XYEnvironment, Wall
 
 from logic import KB, FolKB,PropKB,expr,dpll_satisfiable
 from logic import *
 
 from utils import print_table
+
 
 from logic import KB, FolKB
 from logic import *
@@ -22,8 +22,14 @@ AGENT = 'A{}{}'
 GOLD = 'G{}{}'
 PIT = 'P{}{}'
 BREEZE = 'B{}{}'
+=======
+from logic import dpll_satisfiable, expr
+
 
 def is_iterable(thing):
+    """
+        Args: thing (any):
+    """
     try: iter(thing)
     except TypeError: return False
     else: return True
@@ -66,13 +72,12 @@ def _iff_format(location, some_num, sentence, loop=False):
         sentence (str): The string to apply formatting
     """
     positions = _valid_neighbors(location, some_num)
-    repeat = len(positions) - 1
     xloc, yloc = location
     loc_master = lambda statement: statement.format(xloc, yloc)
     if loop:
-        rv = [sentence[0].format(_x[0], _x[1]) for _x in positions[:-1]]
-        rv.append(sentence[1].format(positions[-1][0], positions[-1][1]))
-        return rv
+        ret_v = [sentence[0].format(_x[0], _x[1]) for _x in positions[:-1]]
+        ret_v.append(sentence[1].format(positions[-1][0], positions[-1][1]))
+        return ret_v
     return [loc_master(sentence)]
 
 def pit_iff(location, some_num):
@@ -82,29 +87,38 @@ def pit_iff(location, some_num):
     """
     # A Pit iff all his neighbors have breezes
     #PIT_IFF = 'P{}{} <=> (B{}{} & B{}{} & B{}{} & B{}{})'
-    rv = _iff_format(location, some_num, 'P{}{} <=> (')
-    rv.extend(_iff_format(location, some_num, ['B{}{} & ', 'B{}{})'], loop=True))
-    return sentence_builder(rv)
+    ret_v = _iff_format(location, some_num, 'P{}{} <=> (')
+    ret_v.extend(_iff_format(location, some_num, ['B{}{} & ', 'B{}{})'], loop=True))
+    return sentence_builder(ret_v)
 def not_pit_iff(location, some_num):
+    """
+    Args: location (tuple), some_num (int)
+    """
     # No pit iff one or more neighbors has no breeze.
     #N_PIT_IFF = '~P{}{} <=> (~B{}{} | ~B{}{} | ~B{}{} | ~B{}{})'
-    rv = _iff_format(location, some_num, '~P{}{} <=> (')
-    rv.extend(_iff_format(location, some_num, ['~B{}{} | ', '~B{}{})'], loop=True))
-    return sentence_builder(rv)
+    ret_v = _iff_format(location, some_num, '~P{}{} <=> (')
+    ret_v.extend(_iff_format(location, some_num, ['~B{}{} | ', '~B{}{})'], loop=True))
+    return sentence_builder(ret_v)
 def breeze_iff(location, some_num):
+    """
+    Args: location (tuple), some_num (int)
+    """
     # A breeze iff one or more neighbors has a pit
     #BREEZE_IFF = 'B{}{} <=> (P{}{} | P{}{} | P{}{} | P{}{})'
-    rv = _iff_format(location, some_num, 'B{}{} <=> (')
-    rv.extend(_iff_format(location, some_num, ['P{}{} | ', 'P{}{})'], loop=True))
-    return sentence_builder(rv)
+    ret_v = _iff_format(location, some_num, 'B{}{} <=> (')
+    ret_v.extend(_iff_format(location, some_num, ['P{}{} | ', 'P{}{})'], loop=True))
+    return sentence_builder(ret_v)
 def not_breeze_iff(location, some_num):
+    """
+    Args: location (tuple), some_num (int)
+    """
     # No breeze iff none of the neighbors have pits.
     #N_BREEZE_IFF = '~B{}{} <=> (~P{}{} & ~P{}{} & ~P{}{} & ~P{}{})'
-    rv = _iff_format(location, some_num, '~B{}{} <=> (')
-    rv.extend(_iff_format(location, some_num, ['~P{}{} & ', '~P{}{})'], loop=True))
-    return sentence_builder(rv)
+    ret_v = _iff_format(location, some_num, '~B{}{} <=> (')
+    ret_v.extend(_iff_format(location, some_num, ['~P{}{} & ', '~P{}{})'], loop=True))
+    return sentence_builder(ret_v)
 
-def which_position(location, some_number, logic_gen):
+def which_position(location, some_number):
     """ Determine if location is a corner, edge or has 4 neighbors.
 
     Args:
@@ -114,16 +128,17 @@ def which_position(location, some_number, logic_gen):
     xpos, ypos = location
     # Is this location in a corner?
     upper_r = xpos == 4 and ypos == 4
-    lower_l = xpos == 1 and ypos == 1 
+    lower_l = xpos == 1 and ypos == 1
     others = (1 in location and some_number in location)
     if upper_r or lower_l or others:
         return 2 # CORNER. 2- Neighbors.
     # Is this location a non-edge (by priority) corner?
-    elif (1 in location or some_number in location):
+    elif 1 in location or some_number in location:
         return 3 # EDGE. 3- Neighbors.
     # This is not a corner or an edge.
     else:
         return 4 # Else 4- Neighbors.
+
 
 
 class OzKB(KB):
@@ -167,6 +182,8 @@ def get_stdin_agent(reference):
     """
     self = reference
     def stdin_agent(percept):
+        """ A stdin agent.
+        """
         if not self.alive or self.winner:
             return self.location
         while True:
@@ -185,78 +202,81 @@ def get_stdin_agent(reference):
         return move
     return stdin_agent
 
-EXPRS = { 'n_breeze': '~B{}{}', 
-          'breeze:': 'B{}{}', 
-          'n_pit': '~P{}{}', 
-          'pit': 'P{}{}'
-}
-
 def tell_kb(percept, location, oz_kb):
-    observed = []
+    """ Tell the kb stuff
+    """
     xloc, yloc = location
     if isinstance(percept, Breeze):
-        oz_kb['B{}{}'.format(xloc, yloc)] = True 
+        oz_kb['B{}{}'.format(xloc, yloc)] = True
     else:
         oz_kb['B{}{}'.format(xloc, yloc)] = False
     oz_kb['P{}{}'.format(xloc, yloc)] = False
 
-def ask_kb(oz_kb):
+def ask_kb(percept, move, agent):
+    """ Ask the kb stuff
+    """
+    oz_kb = agent.oz_kb
+    sentence = pit_iff(move, agent.some_number)
+    satisfy_dpll = dpll_satisfiable(expr(sentence))
+    isin_kb = lambda item_s: oz_kb.has_key(item_s)
+    contradicts_kb = lambda item_s, obj: oz_kb[item_s] != satisfy_dpll[obj]
+    for key in satisfy_dpll.keys():
+        var = key.__repr__()
+        if isin_kb(var) and contradicts_kb(var, key):
+            return True
     return False
 
-#def _valid_neighbors(location, some_num):
 def Oozeplorer_Percept(reference):
     """ A standard input based agent.
     Args:
-        reference (Board): This is the reference to the board object
+        reference (Agent): This is the reference to the board object
             for which you will be using the stdin_agent().  Often this
             would be the 'self' pointer inside of a class.
     """
     self = reference
-    oz_kb = {}
-    explored = {} # The set of explored states.
-    frontier = [] # Stack of unchecked moves.
-    unsure_moves = [] # Popped moves we didn't want.
+    self.our_frontier = list()
+    self.unsure_moves = list() # Popped moves we didn't want.
+    self.ignore_moves = list()
     def knowledge_based_program(percept):
+        """ The agent program
+        """
         if not self.alive or self.winner:
             return self.location
         # Telling the Dict
+
         print frontier
         tell_kb(percept, self.location, oz_kb)
+
+        tell_kb(percept, self.location, self.oz_kb)
+
         local_frontier = _valid_neighbors(self.location, self.some_number)
+        random.shuffle(local_frontier)
+        local_frontier.extend(self.our_frontier)
         n_count = 0
         for _x in range(len(local_frontier)):
             # Update the random moves.
             move = local_frontier[n_count]
-            if move in unsure_moves:
-                unsure_moves.remove(move)
+            if move in self.unsure_moves:
+                self.unsure_moves.remove(move)
             # Check if we've been there
-            if explored.has_key(move) and explored[move]:
+            if self.explored.has_key(move) and self.explored[move]:
                 local_frontier.pop(n_count) # remove this node
                 continue
             # Check for Validity.
-            valid_move = ask_kb(oz_kb)
+            valid_move = ask_kb(percept, move, self)
             if valid_move:
                 move = local_frontier.pop(n_count)
-                local_frontier.extend(frontier)
-                frontier = local_frontier
-                explored[move] = True
+                self.our_frontier = local_frontier
+                self.explored[move] = True
                 return move
             else:
                 _nmove = local_frontier.pop(n_count)
-                unsure_moves.append(_nmove)
-                continue 
-        move = random.choice(unsure_moves)
-        explored[move] = True
-        unsure_moves.remove(move)
+                self.unsure_moves.append(_nmove)
+                continue
+        move = random.choice(self.unsure_moves)
+        self.explored[move] = True
+        self.unsure_moves.remove(move)
         return move
-
-
-
-
-
-        # Ask
-        next_move = ask_kb()
-        return next_move
     return knowledge_based_program
 
 class Agent(Thing):
@@ -264,12 +284,12 @@ class Agent(Thing):
     are. Inherit a thing.
     """
     def __init__(self, some_number, program=None):
-        """
-        """
         self.some_number = some_number
         self.performance = 0
         self.alive = True
         self.winner = False
+        self.oz_kb = {}
+        self.explored = {} # The set of explored states.
         if program is None:
             program = get_stdin_agent(self)
         assert callable(program)
@@ -277,9 +297,19 @@ class Agent(Thing):
         self.location = None
 
     def is_alive(self):
+        """Return true if alive"""
         return self.alive
     def is_winner(self):
+        """Return true if we found gold"""
         return self.winner
+
+    def init_agent(self, location):
+        """ Initialize the agent"""
+        if self.location is None:
+            self.location = location
+            self.explored[self.location] = True
+            return True
+        return False
 
     def start(self):
         """ Start the game and loop over the moves etc breaking when
@@ -287,10 +317,9 @@ class Agent(Thing):
         """
         playing = True
         while playing:
-            playing = False
+            if not self.is_alive(): return
+            if self.is_winner(): return
 
-    def observe(percept):
-        pass
 
 class Pit(Thing):
     """ The pit for this game. Inherit a thing.
@@ -298,9 +327,9 @@ class Pit(Thing):
     def __init__(self):
         self.state = -1
         self.location = None
-        super(Thing,self).__init__()
+        super(Thing, self).__init__()
     def show_state(self):
-        print self.state 
+        print self.state
 
 class Gold(Thing):
     """ The goal for this game. Inherit a thing.
@@ -308,42 +337,46 @@ class Gold(Thing):
     def __init__(self):
         self.state = 1
         self.location = None
-        super(Thing,self).__init__()
+        super(Thing, self).__init__()
     def show_state(self):
-        print self.state 
-
+        print self.state
 
 class Breeze(Thing):
+    """ A breeze object
+    """
     def __init__(self, location=None):
         if location is not None:
             self.location = location
+        super(Thing, self).__init__()
 
 
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
     """
-    def __init__(self, some_number):
-        """
-        """
+    def __init__(self, some_number, prob_pit=20, silent=False):
         # some_number + 2 since the map is surrounded by walls.  2 extra cols/rows
         super(Board, self).__init__(some_number+2, some_number+2)
+        self.p_pit = prob_pit
+        self.silent = silent
         self.some_number = some_number
         self.add_walls()
         self.remove_duplicate_walls()
         self.matrix = None
-        self.frontier = None
         self.make_board()
         self.print_board()
 
     def print_board(self):
+        """ Print the board.
+        """
         if self.matrix is None:
-           self.matrix = get_static_board_layout(self.things, self.width, self.height) 
+            self.matrix = get_static_board_layout(self.things, self.width, self.height)
+        if self.silent:
+            return
         agent = self.agents[0]
         xloc, yloc = agent.location
-        place_hold = self.matrix[self.height - yloc - 1][xloc]
         self.matrix[self.height - yloc - 1][xloc] = agent
         print_table(self.matrix)
-        self.matrix[self.height - yloc - 1][xloc] = place_hold
+        self.matrix[self.height - yloc - 1][xloc] = '<*  *>'
         print ''
 
     def remove_duplicate_walls(self):
@@ -363,7 +396,7 @@ class Board(XYEnvironment):
 
 
     def thing_classes(self):
-        """
+        """ Get the list of things in this world
         """
         return [Wall, Gold, Pit, Agent]
     #randome function we can use
@@ -376,11 +409,6 @@ class Board(XYEnvironment):
         if the Pit is near, we want to know if a breeze is here.
         """
         xloc, yloc = agent.location
-        # The agent falls into the darkness.
-        if any(self.list_things_at((xloc, yloc), tclass=Pit)):
-            agent.alive = False
-        if any(self.list_things_at((xloc, yloc), tclass=Gold)):
-            agent.winner = True
         diag_vectors = [(1, 1), (-1, 1), (-1, -1), (1, -1)] # unit-vectors
         # Get the relative diagonal locations using unit-vectors.
         diagonals = [(x + xloc, y + yloc) for x, y in diag_vectors]
@@ -399,41 +427,27 @@ class Board(XYEnvironment):
         """
         dead = not any(agent.is_alive() for agent in self.agents)
         winner = any(agent.is_winner() for agent in self.agents)
-        def winner_msg(msg):
-            try: # This is a hack to avoid printing the winning message twice.
-                if not self.printed_message:
-                    pass # We already printed.
-            except AttributeError: # Throw exception the first time.
-                self.printed_message = True
-                print msg
         if dead:
-            winner_msg('Your Agent Died')
+            print 'Your Agent Died'
             return dead
         elif winner:
-            winner_msg('Your Agent Wins')
+            print 'Your Agent Wins'
             return winner
         return False
 
     def execute_action(self, agent, action):
-        """
+        """ Have agent take an action.
         """
         if self.is_done():
             return
         agent.bump = False
-        xloc, yloc = agent.location
         axloc, ayloc = action
-        if abs(axloc - xloc) >= 1 and abs(ayloc - yloc) >= 1:
-            print 'Invalid Choice.  You lose your turn dummy.'
-            print 'You can only move one square at a time.'
-            return
-        if abs(axloc - xloc) > 1 or abs(ayloc - yloc) > 1:
-            print 'No Diagonal movement more than 1 duh'
-            return
-        agent.location = action
-        self.print_board()
+        #time.sleep(1)
+        self.executing_agent = agent
+        sensor, state = self.move((axloc, ayloc))
 
     def default_location(self, thing):
-        """
+        """ Get the default location for a thing.
         """
         if isinstance(thing, Agent):
             return (1, 1)
@@ -446,23 +460,32 @@ class Board(XYEnvironment):
                 break
             return (xloc, yloc)
 
+    def add_agent(self, agent):
+        """ Add an agent.
+        """
+        assert isinstance(agent, Agent)
+        xloc, yloc = self.default_location(agent)
+        agent.init_agent((xloc, yloc))
+        self.things.append(agent)
+        self.agents.append(agent)
+
     def make_board(self):
         """ Initialize the board according to assignment specs
         """
-        generate = lambda: random.randint(1, 10) in [1, 2]
+        generate = lambda: random.randint(1, 100) in range(1, self.p_pit+1)
         some_number = self.some_number
         agent = Agent(some_number)
+        agent.program = Oozeplorer_Percept(agent)
+        self.add_agent(agent)
         gold = Gold()
-        self.add_thing(agent, None)
-        self.agents.append(agent)
         self.add_thing(gold, None)
         for row in range(1, some_number + 1):
             for col in range(1, some_number + 1):
-                valid_spot = (row, col) != gold.location and (row, col) != (1, 1) 
+                valid_spot = (row, col) != gold.location and (row, col) != (1, 1)
                 if valid_spot and generate():
-                    pt = Pit()
-                    pt.location = (row, col)
-                    self.things.append(pt)
+                    t_pt = Pit()
+                    t_pt.location = (row, col)
+                    self.things.append(t_pt)
 
     def move(self, pair):
         """
@@ -471,23 +494,36 @@ class Board(XYEnvironment):
         Returns:
             (tuple): (sensor, state)
                 sensor - True if a breeze in that square else false.
-                state - If oozplorer loses moving into (x, y) square -1, 
+                state - If oozplorer loses moving into (x, y) square -1,
                     if it wins 1, otherwise 0.
         Actions:
-            If the square didn't have an oozplayer and it was a legal move 
+            If the square didn't have an oozplayer and it was a legal move
                 then the square is not occupied by oozplorer.
         Throws:
             IndexError (Exception): If pair (x, y) is not in the map.
         """
-        # super(OzBoard, self).move_to(thing, destination) # From super
-        pass
+        xloc, yloc = pair
+        self.executing_agent.location = (xloc, yloc)
+        state = 0
+        if any(self.list_things_at((xloc, yloc), tclass=Pit)):
+            self.executing_agent.alive = False
+            state = -1
+        elif any(self.list_things_at((xloc, yloc), tclass=Gold)):
+            self.executing_agent.winner = True
+            state = 1
+        percepts = self.percept(self.executing_agent)
+        sensor = False
+        if isinstance(percepts, Breeze):
+            sensor = True
+        self.print_board()
+        return (sensor, state)
 
 
-def satisfy(expr, true_var):
-    """ Recursively remove true_var from expr.
+def satisfy(expression, true_var):
+    """ Recursively remove true_var from expression.
 
     Args:
-        - expr (Expr): An expression which trying to simplify.
+        - expression (Expr): An expression which trying to simplify.
         - true_var (Expr): A true variable to remove from the expression.
 
     Returns:
@@ -498,51 +534,24 @@ def satisfy(expr, true_var):
     satisfy(statement, expr('P00'))
     statement becomes -> Expr('((B01 <=> (P11 | P02)) <=> P11)')
     """
-    if len(expr.args) == 0:
-        if expr.__repr__() == true_var.__repr__():
+    if len(expression.args) == 0:
+        if expression.__repr__() == true_var.__repr__():
             return True
         else:
             return False
     cnt = 0
     while True:
-        if cnt >= len(expr.args):
+        if cnt >= len(expression.args):
             break
-        arg = expr.args[cnt]
+        arg = expression.args[cnt]
         changed = satisfy(arg, true_var)
         if isinstance(changed, Expr):
-            expr.args[cnt] = changed
+            expression.args[cnt] = changed
         elif changed is True:
-            expr.args.pop(cnt)
-            expr = expr.args[0]
+            expression.args.pop(cnt)
+            expression = expression.args[0]
         cnt += 1
-    return expr
-
-def run_game(number):
-    """
-    Args:
-        number (int): The integer 
-    """
-    pass
-
-
-def parse_arguments(arguments):
-    """ 
-    Args: 
-        arguments (list): sys.argv object.
-    Returns:
-        number (int): The integer command line argument.
-    """
-    def bail_out():
-        print 'Invalid Command line arguments.  Use Integers only.'
-        #sys.exit(1)
-    try:
-        number = int(arguments[1])
-    except IndexError:
-        bail_out()
-    except ValueError:
-        bail_out()
-    return number
-
+    return expression
 
 
 def generate():
@@ -579,6 +588,8 @@ def make_board(some_number):
 
 
 def get_static_board_layout(things, width, height):
+    """ Get a matrix of the board layout.
+    """
     obj_map = convert_to_dict(things)
     matrix = []
     for yloc in xrange(height):
@@ -592,6 +603,8 @@ def get_static_board_layout(things, width, height):
     return matrix
 
 def convert_to_dict(things):
+    """ Hash the stuff in them map by their (x,y)
+    """
     rv_d = {}
     for this_thing in things:
         if isinstance(this_thing, Pit):
@@ -605,6 +618,27 @@ def convert_to_dict(things):
             rv_d[xloc, yloc] = this_thing
     return rv_d
 
+def parse_arguments(arguments):
+    """
+    Args:
+        arguments (list): sys.argv object.
+    Returns:
+        number (int): The integer command line argument.
+    """
+    def bail_out():
+        """ End the program.
+        """
+        print 'Invalid Command line arguments.  Use Integers only.'
+        sys.exit(1)
+    try:
+        number = int(arguments[1])
+    except IndexError:
+        bail_out()
+    except ValueError:
+        bail_out()
+    if number <= 1:
+        bail_out()
+    return number
 
 if __name__ == '__main__':
     print 'updating\n'
@@ -622,6 +656,7 @@ if __name__ == '__main__':
     #randompit = b.things[40]
     #print randompit.location
     ARGS = sys.argv
+
     NUMBER = parse_arguments(ARGS)
     run_game(NUMBER)
     create_logic(NUMBER)
@@ -643,6 +678,20 @@ if __name__ == '__main__':
 #print dpll_satisfiable(expr(pit))
 
 """ 
+=======
+    SOME_NUM = parse_arguments(ARGS)
+    _B = Board(SOME_NUM)
+    _B.run()
+
+    # wins = 0
+    # for num in range(1000):
+    #     B_ = Board(SOME_NUM, prob_pit=20, silent=True)
+    #     B_.run()
+    #     if B_.agents[0].is_winner():
+    #         wins += 1
+    # print 'Win Ratio:', ((wins*1.0) / 1000) * 100
+"""
+
     pt = Pit()
     bd = Board()
     ag = Agent(3)
@@ -657,7 +706,8 @@ if __name__ == '__main__':
     ag.location = (2, 1)
     print bd.percept(ag)
     ag.location = (1, 1)
-    print bd.percept(ag)
+    print bd.pe
+    rcept(ag)
     print 'INITIAL MAP'
     print '   . . .   '
     print '   . P .   '
