@@ -411,7 +411,7 @@ class Board(XYEnvironment):
             print 'Your Agent Died'
             return dead
         elif winner:
-            print 'Gold Found!\nOozplorer wins!'
+            print 'Your Agent Wins'
             return winner
         return False
 
