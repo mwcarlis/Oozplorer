@@ -215,8 +215,24 @@ Distributive properties \\
 \\
 4. \big[ \neg W\textsubscript{3,3} \lor \big(S\textsubscript{2,3} \land S\textsubscript{3,2} \land S\textsubscript{3,4} \land S\textsubscript{4,3}\big) \big] \land \big[\big(\neg S\textsubscript{2,3} \land \neg S\textsubscript{3,2} \land \neg S\textsubscript{3,4} \land \neg S\textsubscript{4,3}\big) \lor W\textsubscript{3,3} \big] \\
 \\
-5. \big(\neg W\textsubscript{3,3} \lor S\textsubscript{2,3} \big) \land \big(\neg W\textsubscript{3,3} \lor S\textsubscript{3,2}\big) \land \big(\neg W\textsubscript{3,3} \lor S\textsubscript{3,4}\big) \land  \big(\neg W\textsubscript{3,3} \lor S\textsubscript{4,3} \big) \\ \land( \neg S\textsubscript{2,3} \lor \neg S\textsubscript{3,2} \lor \neg S\textsubscript{3,4} \lor \neg S\textsubscript{4,3} \lor W\textsubscript{3,3} \big)
+5. \big(\neg W\textsubscript{3,3} \lor S\textsubscript{2,3} \big) \land \big(\neg W\textsubscript{3,3} \lor S\textsubscript{3,2}\big) \land \big(\neg W\textsubscript{3,3} \lor S\textsubscript{3,4}\big) \land  \big(\neg W\textsubscript{3,3} \lor S\textsubscript{4,3} \big) \\ \land( \neg S\textsubscript{2,3} \lor \neg S\textsubscript{3,2} \lor \neg S\textsubscript{3,4} \lor \neg S\textsubscript{4,3} \lor W\textsubscript{3,3} \big) \\
 \end{p6}
+\\
+\\
+Transcript \\
+\\
+\begin{verbatim}
+to_cnf("W33 <=> S23 & S32 & S34 & S43")
+
+>>((W33 | ~S23) & (S23 | ~W33) & S32 & S34 & S43)
+
+to_cnf("(~W33 | S23)&(~W33| S32)&(~W33| S34)&(~W33| S43)& (~S23| ~S32| ~S34| ~S43 | W33)")
+
+>>((~W33 | S23) & (~W33 | S32) & (~W33 | S34) & (~W33 | S43) & 
+(~S23 | ~S32 | ~S34 | ~S43 | W33)
+\end{verbatim}
+
+
 \end{document}
 
 
