@@ -4,11 +4,16 @@
 - Chris Nguyen
 - Shunt Balushian
 
+class Board: line 325
+
+class Agent: line 240
 
 start() -  This function is inherited from agents.Environment which is named run().
-    This method is called at line 598
+    This method is called at line 604.  The run() is defined in agents.py on 
+    line 246 inside class Environment.  The professor gave us permission to Use
+    this method instead of defining our own start().
 
-move() - This function is on line 470
+move() - This function is on line 476 and called on line 432.
 """
 import sys, time
 import random
@@ -267,14 +272,14 @@ class Agent(Thing):
             return True
         return False
 
-    def start(self):
-        """ Start the game and loop over the moves etc breaking when
-            we've won or lost.
+    def check_status(self, sensor, state):
+        """ Check the status of the agent at some location.
         """
-        playing = True
-        while playing:
-            if not self.is_alive(): return
-            if self.is_winner(): return
+        self.sensed = sensor
+        if state == 1:
+            self.winner = True
+        elif state == -1:
+            self.alive = False
 
 
 class Pit(Thing):
@@ -315,6 +320,7 @@ class Wall(Thing):
     def __repr__(self):
         return ''
 
+invalid_move = lambda xpos, ypos: False
 
 class Board(XYEnvironment):
     """ The board of the oozplorer game.  Inherit XYEnvironment
@@ -422,9 +428,9 @@ class Board(XYEnvironment):
             return
         agent.bump = False
         axloc, ayloc = action
-        #time.sleep(1)
         self.executing_agent = agent
         sensor, state = self.move((axloc, ayloc))
+        agent.check_status(sensor, state)
 
     def default_location(self, thing):
         """ Get the default location for a thing.
@@ -483,20 +489,20 @@ class Board(XYEnvironment):
             IndexError (Exception): If pair (x, y) is not in the map.
         """
         xloc, yloc = pair
+        if xloc < 0 or yloc < 0 or invalid_move(xloc, yloc):
+            raise IndexError("Invalid xloc, yloc: ({},{})".format(xloc, yloc))
         self.executing_agent.location = (xloc, yloc)
         state = 0
         if any(self.list_things_at((xloc, yloc), tclass=Pit)):
-            self.executing_agent.alive = False
             state = -1
         elif any(self.list_things_at((xloc, yloc), tclass=Gold)):
-            self.executing_agent.winner = True
             state = 1
         percepts = self.percept(self.executing_agent)
         sensor = False
         if isinstance(percepts, Breeze):
             sensor = True
         self.print_board()
-        time.sleep(1)
+        #time.sleep(1)
         return (sensor, state)
 
 
